@@ -11,23 +11,16 @@
 *.gch
 *.pch
 
-# Linker files
+# Linker & Debugger files
 *.ilk
-
-# Debugger Files
 *.pdb
+*.dwo
 
-# Compiled Dynamic libraries
+# Compiled Dynamic & Static libraries
 *.so
 *.dylib
 *.dll
 *.so.*
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
 *.lai
 *.la
 *.a
@@ -47,24 +40,22 @@ build-*/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
 install_manifest.txt
 compile_commands.json
 
-# Temporary files
+# Ignorar Makefiles generados en subcarpetas, pero permitir el de la raíz
+Makefile
+!/Makefile
+
+# Temporary, IDE & OS files
 *.tmp
 *.log
 *.bak
 *.swp
-
-# vcpkg
 vcpkg_installed/
-
-# debug information files
-*.dwo
-
-# test output & cache
 Testing/
 .cache/
-
 .vscode/
+Thumbs.db
+desktop.ini
+.DS_Store
