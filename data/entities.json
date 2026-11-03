@@ -1,0 +1,84 @@
+{
+    "villano": {
+        "name": "Pajayu",
+        "hp":100,
+        "attack":50,
+        "magic":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "heroe": {
+        "name": "Salomon Rondon",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":"" 
+    },
+    "maduro": {
+        "name": "Nicolas Maduro",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "chavezneitor": {
+        "name": "Chavez Neitor",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "robot1":{
+        "name": "Robot1",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "robot2":{
+        "name": "Robot2",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "robot3":{
+        "name": "Robot3",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "soldado1":{
+        "name": "Soldado1",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    },
+    "soldado2":{
+        "name": "Soldado2",
+        "hp":100,
+        "attack":50,
+        "defense":50,
+        "speed":50,
+        "hurtbox":[],
+        "texture":""
+    }
+}
