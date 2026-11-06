@@ -9,9 +9,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Coloca el ejecutable final siempre en build/bin/ (tanto en Windows como en Linux)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Compilar SFML de forma estática evita problemas de archivos .dll faltantes en Windows
+# Compilar SFML y el runtime de MinGW de forma estática evita DLL faltantes o incompatibles en Windows
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SFML_BUILD_AUDIO ON CACHE BOOL "" FORCE)
+set(SFML_BUILD_AUDIO OFF CACHE BOOL "" FORCE)
 set(SFML_BUILD_NETWORK OFF CACHE BOOL "" FORCE)
 
 include(FetchContent)
@@ -25,6 +25,18 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SFML)
 
+set(DESIGNAR_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(DESIGNAR_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    Designar
+    GIT_REPOSITORY https://github.com/R3mmurd/DeSiGNAR.git
+    GIT_TAG v4.0.1
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(Designar)
+
 # Busca automáticamente todos los .cpp en la carpeta src/
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
@@ -35,5 +47,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     SFML::Graphics
-    SFML::Audio
+    Designar::Designar
+)
+
+if(MINGW)
+    target_link_options(${PROJECT_NAME} PRIVATE -static)
+endif()
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
