@@ -21,6 +21,63 @@ void Game::popState() {
         states.pop();
     }
 }
+
+bool Game::selectEra(LevelEra era)
+{
+    if (hasActiveEra || levelTree.get_mini_boss(era) == nullptr ||
+        levelTree.is_era_completed(era) ||
+        levelTree.get_root()->get_key().completed)
+    {
+        return false;
+    }
+
+    activeEra = era;
+    hasActiveEra = true;
+    return true;
+}
+
+const Designar::MTreeNode<LevelInfo>* Game::getCurrentLevel() const
+{
+    return hasActiveEra ? levelTree.get_next_level(activeEra) : nullptr;
+}
+
+bool Game::completeCurrentLevel()
+{
+    return hasActiveEra && levelTree.complete_next_level(activeEra);
+}
+
+bool Game::canFightCurrentMiniBoss() const
+{
+    return hasActiveEra && levelTree.can_fight_mini_boss(activeEra);
+}
+
+bool Game::completeCurrentMiniBoss()
+{
+    if (!canFightCurrentMiniBoss() || !levelTree.complete_mini_boss(activeEra))
+    {
+        return false;
+    }
+
+    hasActiveEra = false;
+    return true;
+}
+
+bool Game::canFightFinalBoss() const
+{
+    return !hasActiveEra && !levelTree.get_root()->get_key().completed &&
+           levelTree.can_fight_final_boss();
+}
+
+bool Game::completeFinalBoss()
+{
+    return canFightFinalBoss() && levelTree.complete_final_boss();
+}
+
+const LevelTree& Game::getLevelTree() const
+{
+    return levelTree;
+}
+
 void Game::run() 
 {
     sf::Clock clock;
