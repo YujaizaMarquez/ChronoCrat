@@ -1,0 +1,16 @@
+{
+    "id": "heroe",
+    "name": "Viajero del Tiempo",
+    "maxHp": 250,
+    "attack": 30,
+    "speed": 180.0,
+    "frameWidth": 64,
+    "frameHeight": 64,
+    "spriteSheet": "assets/heroe_spritesheet.png",
+    "animations": {
+        "idle": { "row": 0, "frames": 4, "duration": 0.15, "loop": true },
+        "walk": { "row": 1, "frames": 6, "duration": 0.10, "loop": true },
+        "attack": { "row": 2, "frames": 4, "duration": 0.08, "loop": false },
+        "hurt": { "row": 3, "frames": 2, "duration": 0.12, "loop": false }
+    }
+}
