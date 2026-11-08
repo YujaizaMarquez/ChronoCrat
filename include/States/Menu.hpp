@@ -1,5 +1,4 @@
 #pragma once
-
 #include "State.hpp"
 
 class Menu : public State

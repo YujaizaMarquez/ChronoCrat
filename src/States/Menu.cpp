@@ -18,9 +18,12 @@ Menu::Menu(sf::RenderWindow* window, Game* game) : State(window, game), backgrou
         static_cast<float>(windowSize.x) / textureSize.x,
         static_cast<float>(windowSize.y) / textureSize.y
     });
+    
 }
 
-void Menu::update(float) {}
+void Menu::update(float) 
+{
+}
 
 void Menu::handleEvent(sf::Event& event)
 {
