@@ -6,7 +6,7 @@ class Menu : public State
     private:
         sf::Texture backgroundTexture;
         sf::Sprite backgroundSprite;
-
+        
     public:
         Menu(sf::RenderWindow* window, Game* game);
 

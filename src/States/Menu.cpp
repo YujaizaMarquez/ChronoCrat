@@ -17,8 +17,7 @@ Menu::Menu(sf::RenderWindow* window, Game* game) : State(window, game), backgrou
     backgroundSprite.setScale({
         static_cast<float>(windowSize.x) / textureSize.x,
         static_cast<float>(windowSize.y) / textureSize.y
-    });
-    
+    });      
 }
 
 void Menu::update(float) 

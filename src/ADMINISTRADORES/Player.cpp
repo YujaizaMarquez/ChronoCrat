@@ -2,7 +2,15 @@
 #include <cmath>
 #include <iostream>
 
-Player::Player() : Entity(), playerLevel(1), exp(0)
+Player::Player() 
+    :Entity(), 
+    playerLevel(1), 
+    exp(0),
+    attackDamage(35),
+    attackRange(65.f),
+    attackCooldown(0.45f),
+    attackTimer(0.f),
+    attackingThisFrame(false)
 {
     if (!loadFromJson("data/heroe.json")) {
         std::cerr << "[ERROR] No se pudo cargar data/heroe.json en Player\n";
@@ -11,6 +19,10 @@ Player::Player() : Entity(), playerLevel(1), exp(0)
 
 void Player::handleInput(float deltaTime)
 {
+    if (isDead()) {
+        move({0.f, 0.f}, deltaTime);
+        return;
+    }
     sf::Vector2f dir(0.f, 0.f);
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) dir.y -= 1.f;
@@ -18,19 +30,71 @@ void Player::handleInput(float deltaTime)
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dir.x -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dir.x += 1.f;
 
-    // Normalizar el vector para que no corra más rápido en diagonal
     if (dir.x != 0.f && dir.y != 0.f) {
         float length = std::sqrt(dir.x * dir.x + dir.y * dir.y);
         dir /= length;
     }
 
     move(dir, deltaTime);
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y) && attackTimer <= 0.f) {
+        attackingThisFrame = true;
+        attackTimer = attackCooldown;
+        std::cout << "[Player] Ataque cuerpo a cuerpo lanzado (Tecla Y)\n";
+    }
 }
 
 void Player::update(float deltaTime)
 {
+    attackingThisFrame = false;
+
+    if (attackTimer > 0.f) {
+        attackTimer -= deltaTime;
+    }
+
     handleInput(deltaTime);
     Entity::update(deltaTime);
+}
+
+bool Player::isDead() const
+{
+    return getHp() <= 0;
+}
+
+bool Player::isAttacking() const
+{
+    return attackingThisFrame;
+}
+
+int Player::getAttackDamage() const
+{
+    return attackDamage;
+}
+
+float Player::getAttackRange() const
+{
+    return attackRange;
+}
+
+void Player::setCombatStats(int damage, float range, float cooldown)
+{
+    attackDamage = damage;
+    attackRange = range;
+    attackCooldown = cooldown;
+}
+
+bool Player::attackTarget(Entity& target)
+{
+    if (!attackingThisFrame || target.getHp() <= 0) return false;
+
+    sf::Vector2f diff = target.getPosition() - getPosition();
+    float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+
+    if (dist <= attackRange) {
+        target.setHp(target.getHp() - attackDamage);
+        return true;
+    }
+    return false;
 }
 
 void Player::addExp(int amount)
@@ -38,7 +102,6 @@ void Player::addExp(int amount)
     if (amount <= 0) return;
     exp += amount;
 
-    // Sube de nivel cada 100 puntos de experiencia
     while (exp >= 100) {
         exp -= 100;
         ++playerLevel;
