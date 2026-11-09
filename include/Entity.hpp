@@ -21,12 +21,14 @@ private:
 
 public:
     Entity();
+    virtual ~Entity() = default;
 
     bool loadFromJson(const std::string& jsonPath);
     void move(const sf::Vector2f& direction, float dt);
     void playAnimation(const std::string& clipName, bool forceRestart = false);
-    void update(float dt);
-    void draw(sf::RenderWindow& window);
+
+    virtual void update(float dt);
+    virtual void draw(sf::RenderWindow& window);
 
     void setPosition(const sf::Vector2f& pos);
     const sf::Vector2f& getPosition() const;
