@@ -28,7 +28,7 @@ Designar::DynArray<LevelEncounter> createLevel1Encounters(
         Designar::DynArray<LevelEnemySpawn>()
     };
 
-    constexpr std::size_t soldierCount = 5;
+    constexpr std::size_t soldierCount = 2;
     for (std::size_t index = 0; index < soldierCount; ++index)
     {
         const float horizontalPosition =
