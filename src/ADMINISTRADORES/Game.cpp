@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
@@ -30,13 +31,36 @@ bool Game::startNewGame()
         return false;
     }
 
-    std::unique_ptr<State> level = std::make_unique<Level1>(window.get(), this);
-    if (!selectEra(LevelEra::Past))
+    pushState(
+        std::make_unique<LevelSelectionMenu>(
+            window.get(),
+            this
+        )
+    );
+
+    return true;
+}
+
+bool Game::startLevel(LevelEra era)
+{
+    // Por ahora solamente está implementado
+    // el primer nivel de Pasado.
+
+    if (era != LevelEra::Past || hasActiveEra)
+    {
+        return false;
+    }
+
+    std::unique_ptr<State> level =
+        std::make_unique<Level1>(window.get(), this);
+
+    if (!selectEra(era))
     {
         return false;
     }
 
     pushState(std::move(level));
+
     return true;
 }
 
