@@ -56,13 +56,26 @@ void Entity::move(const sf::Vector2f& direction, float dt) {
         position.y += direction.y * speed * dt;
         sprite.setPosition(position);
 
-        if (direction.x > 0.f) anim.setFacingRight(true);
-        else if (direction.x < 0.f) anim.setFacingRight(false);
+        if (direction.x > 0.f) setFacingRight(true);
+        else if (direction.x < 0.f) setFacingRight(false);
 
         anim.play("walk");
     } else {
         anim.play("idle");
     }
+}
+
+void Entity::setFacingRight(bool right) {
+    facingRight = right;
+    anim.setFacingRight(right);
+}
+
+bool Entity::isFacingRight() const {
+    return facingRight;
+}
+
+void Entity::setVisualScale(float scale) {
+    sprite.setScale({scale, scale});
 }
 
 void Entity::playAnimation(const std::string& clipName, bool forceRestart) {

@@ -32,8 +32,6 @@ private:
     bool rewardGranted;
 
     void updatePatrol(float dt);
-    void updateChase(float dt, const Player& player);
-    void updateAttack(float dt, Player& player);
 
 public:
     Enemy();
@@ -45,9 +43,13 @@ public:
     void setCombatStats(float detectRad, float attackRad, int damage, float cooldown, int exp);
     void setIsBoss(bool boss);
 
-    void updateAI(float dt, Player& player);
+    virtual void updateAI(float dt, Player& player);
     void update(float dt) override;
 
     EnemyState getState() const;
     bool isDead() const;
+
+protected:
+    virtual void updateChase(float dt, const Player& player);
+    virtual void updateAttack(float dt, Player& player);
 };

@@ -2,11 +2,13 @@
 #include "Game.hpp"
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 #include <utility>
 
 LevelState::LevelState(
     sf::RenderWindow* window,
     Game* game,
+    const std::string& backgroundPath,
     Designar::DynArray<LevelEncounter> encounters,
     LevelWorldBounds worldBounds,
     float cameraFollowSpeed)
@@ -17,8 +19,29 @@ LevelState::LevelState(
           EncounterStatus::Pending),
       worldBounds(worldBounds),
       cameraView(window->getDefaultView()),
-      cameraFollowSpeed(std::max(0.f, cameraFollowSpeed))
+      cameraFollowSpeed(std::max(0.f, cameraFollowSpeed)),
+      backgroundSprite(backgroundTexture)
 {
+    if (!backgroundTexture.loadFromFile(backgroundPath))
+    {
+        throw std::runtime_error("No se pudo cargar el fondo del nivel: " + backgroundPath);
+    }
+
+    backgroundTexture.setSmooth(false);
+    const sf::Vector2u textureSize = backgroundTexture.getSize();
+    backgroundSprite.setTextureRect(
+        sf::IntRect(
+            {0, 0},
+            {static_cast<int>(textureSize.x), static_cast<int>(textureSize.y)}));
+
+    const sf::Vector2f worldSize(
+        worldBounds.maximum.x - worldBounds.minimum.x,
+        worldBounds.maximum.y - worldBounds.minimum.y);
+    backgroundSprite.setPosition(worldBounds.minimum);
+    backgroundSprite.setScale({
+        worldSize.x / static_cast<float>(textureSize.x),
+        worldSize.y / static_cast<float>(textureSize.y)
+    });
 }
 
 void LevelState::update(float deltaTime)
@@ -36,6 +59,7 @@ void LevelState::handleEvent(sf::Event& event)
 void LevelState::draw()
 {
     window->setView(cameraView);
+    window->draw(backgroundSprite);
     drawWorld();
     window->setView(window->getDefaultView());
     drawHud();
@@ -51,6 +75,19 @@ void LevelState::completeEncounter(int encounterIndex)
     }
 
     encounterStatuses[encounterIndex] = EncounterStatus::Completed;
+}
+
+bool LevelState::areAllEncountersCompleted() const
+{
+    for (std::size_t index = 0; index < encounterStatuses.size(); ++index)
+    {
+        if (encounterStatuses[index] != EncounterStatus::Completed)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool LevelState::completeLevelProgress()

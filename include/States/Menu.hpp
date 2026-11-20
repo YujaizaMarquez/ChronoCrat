@@ -14,7 +14,7 @@ std::array<sf::RectangleShape, 3> buttons;
 void initializeButtons();
 
 // Saber qué botón está seleccionado
-int getSelectedButton(sf::Vector2f mousePosition);
+int getSelectedButton(sf::Vector2f mousePosition) const;
 
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
@@ -24,7 +24,7 @@ int getSelectedButton(sf::Vector2f mousePosition);
 
     static constexpr int FRAME_WIDTH = 1280;
     static constexpr int FRAME_COUNT = 4;
-    static constexpr float FRAME_DURATION = 0.15f;
+    static constexpr float FRAME_DURATION = 0.22f;
 
     int currentFrame = 0;
 

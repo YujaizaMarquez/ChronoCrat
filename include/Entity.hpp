@@ -13,6 +13,7 @@ private:
     int maxHp = 250;
     int attackDamage = 25;
     float speed = 180.f;
+    bool facingRight = true;
 
     sf::Vector2f position = {200.f, 500.f};
     sf::Texture texture;
@@ -25,6 +26,9 @@ public:
 
     bool loadFromJson(const std::string& jsonPath);
     void move(const sf::Vector2f& direction, float dt);
+    void setVisualScale(float scale);
+    void setFacingRight(bool right);
+    bool isFacingRight() const;
     void playAnimation(const std::string& clipName, bool forceRestart = false);
 
     virtual void update(float dt);

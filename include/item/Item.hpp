@@ -30,10 +30,11 @@ private:
 
 public:
     Item(ItemType type, float durability, float damage, int frameWidth = 64, int frameHeight = 64);
-    bool loadSpriteSheet(const std::string& path);
+    bool loadSpriteSheet(const std::string& path, bool maskBlackBackground = false);
     ItemType getType() const;
     float getDurability() const;
     float getDamage() const;
+    void setVisualScale(float scale);
     Animation& getAnimation();
     const Animation& getAnimation() const;
     void setPosition(const sf::Vector2f& position);
@@ -41,6 +42,7 @@ public:
     bool tryPickup(const sf::Vector2f& playerPosition, float pickupRadius = 48.f);
     void update(float deltaTime, const sf::Vector2f& playerPosition);
     void draw(sf::RenderWindow& window) const;
+    void drawHeld(sf::RenderWindow& window) const;
     bool isBeingPickedUp() const;
     bool isCollected() const;
     virtual void use() = 0;

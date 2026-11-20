@@ -12,9 +12,37 @@ Item::Item(ItemType type, float durability, float damage, int frameWidth, int fr
 {
 }
 
-bool Item::loadSpriteSheet(const std::string& path)
+bool Item::loadSpriteSheet(const std::string& path, bool maskBlackBackground)
 {
-    if (!texture.loadFromFile(path))
+    if (maskBlackBackground)
+    {
+        sf::Image image;
+        if (!image.loadFromFile(path))
+        {
+            std::cerr << "[Item] No se pudo cargar la imagen: " << path << '\n';
+            return false;
+        }
+
+        const sf::Vector2u imageSize = image.getSize();
+        for (unsigned int y = 0; y < imageSize.y; ++y)
+        {
+            for (unsigned int x = 0; x < imageSize.x; ++x)
+            {
+                const sf::Color pixel = image.getPixel({x, y});
+                if (pixel.r <= 8 && pixel.g <= 8 && pixel.b <= 8)
+                {
+                    image.setPixel({x, y}, sf::Color(0, 0, 0, 0));
+                }
+            }
+        }
+
+        if (!texture.loadFromImage(image))
+        {
+            std::cerr << "[Item] No se pudo crear la textura: " << path << '\n';
+            return false;
+        }
+    }
+    else if (!texture.loadFromFile(path))
     {
         std::cerr << "[Item] No se pudo cargar el spritesheet: " << path << '\n';
         return false;
@@ -39,6 +67,11 @@ float Item::getDurability() const
 float Item::getDamage() const
 {
     return damage;
+}
+
+void Item::setVisualScale(float scale)
+{
+    sprite.setScale({scale, scale});
 }
 
 Animation& Item::getAnimation()
@@ -134,6 +167,14 @@ void Item::update(float deltaTime, const sf::Vector2f& playerPosition)
 void Item::draw(sf::RenderWindow& window) const
 {
     if (textureLoaded && !collected)
+    {
+        window.draw(sprite);
+    }
+}
+
+void Item::drawHeld(sf::RenderWindow& window) const
+{
+    if (textureLoaded)
     {
         window.draw(sprite);
     }

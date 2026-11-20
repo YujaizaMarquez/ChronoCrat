@@ -1,6 +1,8 @@
 #include "Player.hpp"
+#include "item/Weapon.hpp"
 #include <cmath>
 #include <iostream>
+#include <utility>
 
 Player::Player() 
     :Entity(), 
@@ -46,13 +48,22 @@ void Player::handleInput(float deltaTime)
 
 void Player::update(float deltaTime)
 {
+    update(deltaTime, true);
+}
+
+void Player::update(float deltaTime, bool inputEnabled)
+{
     attackingThisFrame = false;
 
     if (attackTimer > 0.f) {
         attackTimer -= deltaTime;
     }
 
-    handleInput(deltaTime);
+    if (inputEnabled) {
+        handleInput(deltaTime);
+    } else {
+        move({0.f, 0.f}, deltaTime);
+    }
     Entity::update(deltaTime);
 }
 
@@ -118,17 +129,41 @@ int Player::getExp() const
     return exp;
 }
 
+bool Player::addItem(std::unique_ptr<Item>&& item)
+{
+    if (!item)
+    {
+        return false;
+    }
+
+    Item* addedItem = item.get();
+    if (!inventory.addItem(std::move(item)))
+    {
+        return false;
+    }
+    if (addedItem->getType() == ItemType::Weapon)
+    {
+        addedItem->use();
+    }
+    return true;
+}
+
 void Player::addItem(const std::string& item)
 {
     if (!hasItem(item)) {
-        inventory.append(item);
+        savedInventoryIds.append(item);
     }
+}
+
+bool Player::hasItem(ItemType type) const
+{
+    return inventory.contains(type);
 }
 
 bool Player::hasItem(const std::string& item) const
 {
-    for (size_t i = 0; i < inventory.size(); ++i) {
-        if (inventory[i] == item) {
+    for (size_t i = 0; i < savedInventoryIds.size(); ++i) {
+        if (savedInventoryIds[i] == item) {
             return true;
         }
     }
@@ -138,11 +173,56 @@ bool Player::hasItem(const std::string& item) const
 void Player::clearInventory()
 {
     inventory.clear();
+    savedInventoryIds.clear();
 }
 
-const Designar::DynArray<std::string>& Player::getInventory() const
+Inventory& Player::getInventory()
 {
     return inventory;
+}
+
+const Inventory& Player::getInventory() const
+{
+    return inventory;
+}
+
+Weapon* Player::getEquippedWeapon()
+{
+    for (std::size_t index = 0; index < inventory.capacity(); ++index)
+    {
+        Item* item = inventory.get(index);
+        if (item != nullptr && item->getType() == ItemType::Weapon)
+        {
+            Weapon* weapon = dynamic_cast<Weapon*>(item);
+            if (weapon != nullptr && weapon->isEquipped())
+            {
+                return weapon;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const Weapon* Player::getEquippedWeapon() const
+{
+    for (std::size_t index = 0; index < inventory.capacity(); ++index)
+    {
+        const Item* item = inventory.get(index);
+        if (item != nullptr && item->getType() == ItemType::Weapon)
+        {
+            const Weapon* weapon = dynamic_cast<const Weapon*>(item);
+            if (weapon != nullptr && weapon->isEquipped())
+            {
+                return weapon;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const Designar::DynArray<std::string>& Player::getSavedInventoryIds() const
+{
+    return savedInventoryIds;
 }
 
 void Player::addDefeatedBoss(const std::string& bossId)
@@ -174,8 +254,8 @@ SaveData Player::exportSaveData(const std::string& currentEra, int levelId) cons
     data.exp = exp;
 
     data.inventory.clear();
-    for (size_t i = 0; i < inventory.size(); ++i) {
-        data.inventory.append(inventory[i]);
+    for (size_t i = 0; i < savedInventoryIds.size(); ++i) {
+        data.inventory.append(savedInventoryIds[i]);
     }
 
     data.defeatedBosses.clear();
@@ -193,8 +273,9 @@ void Player::importSaveData(const SaveData& data)
     exp = data.exp;
 
     inventory.clear();
+    savedInventoryIds.clear();
     for (size_t i = 0; i < data.inventory.size(); ++i) {
-        inventory.append(data.inventory[i]);
+        savedInventoryIds.append(data.inventory[i]);
     }
 
     defeatedBosses.clear();

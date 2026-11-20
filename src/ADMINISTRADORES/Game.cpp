@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "levels/Level1.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
@@ -20,6 +21,23 @@ void Game::popState() {
     if (!states.is_empty()) {
         states.pop();
     }
+}
+
+bool Game::startNewGame()
+{
+    if (hasActiveEra)
+    {
+        return false;
+    }
+
+    std::unique_ptr<State> level = std::make_unique<Level1>(window.get(), this);
+    if (!selectEra(LevelEra::Past))
+    {
+        return false;
+    }
+
+    pushState(std::move(level));
+    return true;
 }
 
 bool Game::selectEra(LevelEra era)

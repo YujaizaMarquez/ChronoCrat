@@ -6,7 +6,7 @@
 
 struct LevelEnemySpawn
 {
-    std::string enemyId;
+    std::string enemyType;
     sf::Vector2f position;
 };
 
@@ -43,6 +43,7 @@ public:
     LevelState(
         sf::RenderWindow* window,
         Game* game,
+        const std::string& backgroundPath,
         Designar::DynArray<LevelEncounter> encounters,
         LevelWorldBounds worldBounds,
         float cameraFollowSpeed = 5.f);
@@ -60,6 +61,7 @@ protected:
     virtual void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) = 0;
 
     void completeEncounter(int encounterIndex);
+    bool areAllEncountersCompleted() const;
     bool completeLevelProgress();
     bool isPlayerMovementBlocked() const;
     const sf::View& getCameraView() const;
@@ -77,6 +79,8 @@ private:
     LevelWorldBounds worldBounds;
     sf::View cameraView;
     float cameraFollowSpeed;
+    sf::Texture backgroundTexture;
+    sf::Sprite backgroundSprite;
     bool levelCompleted = false;
 
     void processEncounterTriggers();

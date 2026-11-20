@@ -1,4 +1,4 @@
-#include <iostream>
+#include "Game.hpp"
 #include "States/Menu.hpp"
 #include <stdexcept>
 
@@ -162,21 +162,9 @@ void Menu::handleEvent(sf::Event& event)
     {
         updateBackgroundScale();
         updateClosePosition();
+        initializeButtons();
     }
 
-    if (const auto* mouseEvent =
-    event.getIf<sf::Event::MouseButtonPressed>())
-{
-    if (mouseEvent->button == sf::Mouse::Button::Left)
-    {
-        std::cout << "Click en X: "
-                  << mouseEvent->position.x
-                  << " | Y: "
-                  << mouseEvent->position.y
-                  << std::endl;
-    }
-}
-    // Detectar clic izquierdo
     if (const auto* mouseEvent =
         event.getIf<sf::Event::MouseButtonPressed>())
     {
@@ -190,23 +178,31 @@ void Menu::handleEvent(sf::Event& event)
             if (closeBounds.contains(mousePosition))
             {
                 window->close();
+                return;
+            }
+
+            if (getSelectedButton(mousePosition) == 0 && game != nullptr)
+            {
+                game->startNewGame();
             }
         }
     }
 }
 void Menu::initializeButtons()
 {
-    // Coordenadas de los tres botones
+    const sf::Vector2u windowSize = window->getSize();
+    const float scaleX = static_cast<float>(windowSize.x) / 1920.f;
+    const float scaleY = static_cast<float>(windowSize.y) / 1080.f;
     const sf::Vector2f positions[] = {
-        {686.f, 509.f},
-        {686.f, 643.f},
-        {686.f, 772.f}
+        {686.f * scaleX, 509.f * scaleY},
+        {686.f * scaleX, 643.f * scaleY},
+        {686.f * scaleX, 772.f * scaleY}
     };
 
     const sf::Vector2f sizes[] = {
-        {560.f, 85.f},
-        {560.f, 83.f},
-        {560.f, 92.f}
+        {560.f * scaleX, 85.f * scaleY},
+        {560.f * scaleX, 83.f * scaleY},
+        {560.f * scaleX, 92.f * scaleY}
     };
 
     for (int i = 0; i < 3; i++)
@@ -222,7 +218,7 @@ void Menu::initializeButtons()
         buttons[i].setOutlineThickness(2.f);
     }
 }
-int Menu::getSelectedButton(sf::Vector2f mousePosition)
+int Menu::getSelectedButton(sf::Vector2f mousePosition) const
 {
     for (int i = 0; i < 3; i++)
     {
@@ -246,11 +242,6 @@ void Menu::draw()
         window->draw(buttons[i]);
     }
 
-    // Botón de cerrar
-    window->draw(closeButton);
-    window->draw(crossLine1);
-    window->draw(crossLine2);
-    // Botón de cerrar
     window->draw(closeButton);
     window->draw(crossLine1);
     window->draw(crossLine2);

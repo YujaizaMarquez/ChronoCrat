@@ -54,6 +54,8 @@ if(MINGW)
     target_link_options(${PROJECT_NAME} PRIVATE -static)
 endif()
 
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+file(COPY
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data"
     DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
