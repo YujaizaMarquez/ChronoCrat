@@ -6,7 +6,7 @@
     "speed": 180.0,
     "frameWidth": 64,
     "frameHeight": 64,
-    "spriteSheet": "assets/personaje_principal_presente/caminando.png",
+    "spriteSheet": "assets/personaje_principal_presente/perso.png",
     "animations": {
         "idle": { 
             "row": 0, 
