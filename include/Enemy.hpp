@@ -1,21 +1,15 @@
 #pragma once
+#include "BehaviorTree.hpp"
 #include "Entity.hpp"
 #include "Player.hpp"
 #include <array.hpp>
+#include <memory>
 #include <string>
-
-enum class EnemyState {
-    Idle,
-    Patrol,
-    Chase,
-    Attack,
-    Dead
-};
 
 class Enemy : public Entity
 {
-private:
-    EnemyState currentState;
+protected:
+    std::unique_ptr<BTNode> behaviorTree;
     Designar::DynArray<sf::Vector2f> patrolPoints;
     size_t currentWaypointIndex;
 
@@ -26,14 +20,22 @@ private:
     float attackTimer;
     float idleWaitTime;
     float idleTimer;
+    bool waitingAtWaypoint;
 
     int expReward;
     bool isBoss;
     bool rewardGranted;
+    bool dead;
 
-    void updatePatrol(float dt);
-    void updateChase(float dt, const Player& player);
-    void updateAttack(float dt, Player& player);
+    // Las subclases pueden sobrescribir este método para armar su propio árbol
+    virtual void buildBehaviorTree();
+
+    // Tareas base reutilizables por los nodos hoja del árbol
+    NodeStatus stepDeath(float dt, Player& player);
+    NodeStatus stepAttack(float dt, Player& player);
+    NodeStatus stepChase(float dt, const Player& player);
+    NodeStatus stepPatrol(float dt);
+    NodeStatus stepIdle(float dt);
 
 public:
     Enemy();
@@ -45,9 +47,12 @@ public:
     void setCombatStats(float detectRad, float attackRad, int damage, float cooldown, int exp);
     void setIsBoss(bool boss);
 
+    float getDetectionRange() const;
+    float getAttackRange() const;
+    bool hasPatrolPoints() const;
+
     void updateAI(float dt, Player& player);
     void update(float dt) override;
 
-    EnemyState getState() const;
     bool isDead() const;
 };
