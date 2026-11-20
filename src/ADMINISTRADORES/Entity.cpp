@@ -102,3 +102,20 @@ int Entity::getMaxHp() const {
 const std::string& Entity::getId() const {
     return id;
 }
+SaveData Entity::exportSaveData(const std::string& currentEra, int levelId) const {
+    SaveData data;
+    data.currentEra = currentEra;
+    data.levelId = levelId;
+    data.characterId = id;
+    data.currentHp = hp;
+    data.maxHp = maxHp;
+    data.position = position;
+    return data;
+}
+
+void Entity::importSaveData(const SaveData& data) {
+    id = data.characterId;
+    maxHp = data.maxHp;
+    setHp(data.currentHp);
+    setPosition(data.position);
+}

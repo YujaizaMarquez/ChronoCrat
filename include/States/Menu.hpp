@@ -18,7 +18,7 @@ int getSelectedButton(sf::Vector2f mousePosition);
 
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
-
+        
     sf::Clock animationClock;
     float animationTimer = 0.f;
 

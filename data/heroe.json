@@ -1,0 +1,24 @@
+{
+    "id": "heroe",
+    "name": "Viajero del Tiempo",
+    "maxHp": 250,
+    "attack": 30,
+    "speed": 180.0,
+    "frameWidth": 64,
+    "frameHeight": 64,
+    "spriteSheet": "assets/personaje_principal_presente/caminando.png",
+    "animations": {
+        "idle": { 
+            "row": 0, 
+            "frames": 1, 
+            "duration": 0.15, 
+            "loop": true 
+        },
+        "walk": { 
+            "row": 0, 
+            "frames": 4, 
+            "duration": 0.12, 
+            "loop": true 
+        }
+    }
+}

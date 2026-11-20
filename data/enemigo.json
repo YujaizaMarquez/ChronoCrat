@@ -1,0 +1,24 @@
+{
+    "id": "guardia_temporal",
+    "name": "Centinela del Tiempo",
+    "maxHp": 100,
+    "attack": 15,
+    "speed": 110.0,
+    "frameWidth": 64,
+    "frameHeight": 64,
+    "spriteSheet": "assets/level_maduro/guardias/guardia_caminando.png",
+    "animations": {
+        "idle": {
+            "row": 0,
+            "frames": 1,
+            "duration": 0.15,
+            "loop": true
+        },
+        "walk": {
+            "row": 0,
+            "frames": 4,
+            "duration": 0.12,
+            "loop": true
+        }
+    }
+}

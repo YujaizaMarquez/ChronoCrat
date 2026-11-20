@@ -77,7 +77,7 @@ void Menu::updateBackgroundScale()
     backgroundSprite.setScale({
         static_cast<float>(windowSize.x) / FRAME_WIDTH,
         static_cast<float>(windowSize.y) / textureSize.y
-    });
+    });      
 }
 
 
