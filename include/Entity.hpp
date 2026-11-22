@@ -2,20 +2,24 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include "Animation.hpp"
+#include "GameConfig.hpp"
 #include "json.hpp"
 #include "Savemanager.hpp"
 
 class Entity {
 private:
-    std::string id = "heroe";
-    std::string name = "Heroe";
-    int hp = 250;
-    int maxHp = 250;
-    int attackDamage = 25;
-    float speed = 180.f;
+    std::string id = GameConfig::Entity::DefaultId;
+    std::string name = GameConfig::Entity::DefaultName;
+    int hp = GameConfig::Entity::DefaultHealth;
+    int maxHp = GameConfig::Entity::DefaultHealth;
+    int attackDamage = GameConfig::Entity::DefaultAttackDamage;
+    float speed = GameConfig::Entity::DefaultSpeed;
     bool facingRight = true;
 
-    sf::Vector2f position = {200.f, 500.f};
+    sf::Vector2f position = {
+        GameConfig::Entity::InitialX,
+        GameConfig::Entity::InitialY
+    };
     sf::Texture texture;
     sf::Sprite sprite;
     Animation anim;

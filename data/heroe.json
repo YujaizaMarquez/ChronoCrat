@@ -3,10 +3,10 @@
     "name": "Viajero del Tiempo",
     "maxHp": 250,
     "attack": 30,
-    "speed": 180.0,
+    "speed": 200.0,
     "frameWidth": 64,
     "frameHeight": 64,
-    "spriteSheet": "assets/personaje_principal_presente/perso.png",
+    "spriteSheet": "assets/personaje_principal_presente/caminando.png",
     "animations": {
         "idle": { 
             "row": 0, 

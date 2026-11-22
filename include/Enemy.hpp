@@ -1,6 +1,7 @@
 #pragma once
 #include "BehaviorTree.hpp"
 #include "Entity.hpp"
+#include "GameConfig.hpp"
 #include "Player.hpp"
 #include <array.hpp>
 #include <memory>
@@ -29,6 +30,7 @@ protected:
 
     // Las subclases pueden sobrescribir este método para armar su propio árbol
     virtual void buildBehaviorTree();
+    virtual void updateAdditionalSystems(float dt, Player& player);
 
     // Tareas base reutilizables por los nodos hoja del árbol
     NodeStatus stepDeath(float dt, Player& player);

@@ -6,16 +6,17 @@
 
 Player::Player() 
     :Entity(), 
-    playerLevel(1), 
-    exp(0),
-    attackDamage(35),
-    attackRange(65.f),
-    attackCooldown(0.45f),
+    playerLevel(GameConfig::Player::InitialLevel),
+    exp(GameConfig::Player::InitialExperience),
+    attackDamage(GameConfig::Player::AttackDamage),
+    attackRange(GameConfig::Player::AttackRange),
+    attackCooldown(GameConfig::Player::AttackCooldown),
     attackTimer(0.f),
     attackingThisFrame(false)
 {
-    if (!loadFromJson("data/heroe.json")) {
-        std::cerr << "[ERROR] No se pudo cargar data/heroe.json en Player\n";
+    if (!loadFromJson(GameConfig::Player::DataPath)) {
+        std::cerr << "[ERROR] No se pudo cargar " << GameConfig::Player::DataPath
+                  << " en Player\n";
     }
 }
 
@@ -113,8 +114,8 @@ void Player::addExp(int amount)
     if (amount <= 0) return;
     exp += amount;
 
-    while (exp >= 100) {
-        exp -= 100;
+    while (exp >= GameConfig::Player::ExperiencePerLevel) {
+        exp -= GameConfig::Player::ExperiencePerLevel;
         ++playerLevel;
     }
 }

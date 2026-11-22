@@ -6,15 +6,15 @@ Enemy::Enemy()
     : Entity(),
       behaviorTree(nullptr),
       currentWaypointIndex(0),
-      detectionRange(250.f),
-      attackRange(45.f),
-      attackDamage(15),
-      attackCooldown(1.2f),
+      detectionRange(GameConfig::Enemy::DetectionRange),
+      attackRange(GameConfig::Enemy::AttackRange),
+      attackDamage(GameConfig::Enemy::AttackDamage),
+      attackCooldown(GameConfig::Enemy::AttackCooldown),
       attackTimer(0.f),
-      idleWaitTime(1.5f),
+      idleWaitTime(GameConfig::Enemy::IdleWaitTime),
       idleTimer(0.f),
       waitingAtWaypoint(false),
-      expReward(50),
+      expReward(GameConfig::Enemy::ExperienceReward),
       isBoss(false),
       rewardGranted(false),
       dead(false)
@@ -145,11 +145,17 @@ void Enemy::updateAI(float dt, Player& player)
         attackTimer -= dt;
     }
 
+    updateAdditionalSystems(dt, player);
+
     // Evaluar el Árbol de Comportamientos
     BTContext ctx{*this, player, dt, distanceToPlayer};
     behaviorTree->tick(ctx);
 
     update(dt);
+}
+
+void Enemy::updateAdditionalSystems(float, Player&)
+{
 }
 
 NodeStatus Enemy::stepDeath(float dt, Player& player)
@@ -194,7 +200,7 @@ NodeStatus Enemy::stepChase(float dt, const Player& player)
     sf::Vector2f diff = player.getPosition() - getPosition();
     float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 
-    if (dist > 0.001f) {
+    if (dist > GameConfig::Enemy::MovementEpsilon) {
         sf::Vector2f dir = diff / dist;
         move(dir, dt);
     }
@@ -222,7 +228,7 @@ NodeStatus Enemy::stepPatrol(float dt)
     sf::Vector2f diff = target - getPosition();
     float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 
-    if (dist <= 5.f) {
+    if (dist <= GameConfig::Enemy::PatrolArrivalDistance) {
         currentWaypointIndex = (currentWaypointIndex + 1) % patrolPoints.size();
         waitingAtWaypoint = true;
         idleTimer = 0.f;
@@ -239,6 +245,16 @@ NodeStatus Enemy::stepIdle(float dt)
 {
     move({0.f, 0.f}, dt);
     return NodeStatus::Success;
+}
+
+void Enemy::updateChase(float dt, const Player& player)
+{
+    stepChase(dt, player);
+}
+
+void Enemy::updateAttack(float dt, Player& player)
+{
+    stepAttack(dt, player);
 }
 
 void Enemy::update(float dt)

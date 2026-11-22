@@ -1,15 +1,13 @@
 #pragma once
-
 #include "item/Item.hpp"
+#include "GameConfig.hpp"
 #include <string>
 
 class Weapon : public Item
 {
 public:
-    static constexpr int MagazineCapacity = 30;
-
     explicit Weapon(
-        const std::string& imagePath = "assets/era1/guerra/mp40.jpeg");
+        const std::string& imagePath = GameConfig::Weapon::Mp40ImagePath);
 
     void use() override;
     bool isEquipped() const;
@@ -19,7 +17,6 @@ public:
 
 private:
     bool equipped = false;
-    int ammo = MagazineCapacity;
+    int ammo = GameConfig::Weapon::MagazineCapacity;
     float fireCooldownRemaining = 0.f;
-    static constexpr float FireInterval = 0.18f;
 };

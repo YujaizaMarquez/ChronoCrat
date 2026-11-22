@@ -2,22 +2,20 @@
 #include <algorithm>
 #include <stdexcept>
 
-namespace
-{
-constexpr int Mp40ImageWidth = 1408;
-constexpr int Mp40ImageHeight = 768;
-constexpr float Mp40VisualScale = 0.08f;
-}
-
 Weapon::Weapon(const std::string& imagePath)
-    : Item(ItemType::Weapon, 100.f, 25.f, Mp40ImageWidth, Mp40ImageHeight)
+    : Item(
+          ItemType::Weapon,
+          GameConfig::Weapon::Durability,
+          GameConfig::Weapon::Damage,
+          GameConfig::Weapon::Mp40ImageWidth,
+          GameConfig::Weapon::Mp40ImageHeight)
 {
     if (!loadSpriteSheet(imagePath, true))
     {
         throw std::runtime_error("No se pudo cargar la imagen del arma: " + imagePath);
     }
 
-    setVisualScale(Mp40VisualScale);
+    setVisualScale(GameConfig::Weapon::Mp40VisualScale);
 }
 
 void Weapon::use()
@@ -44,7 +42,7 @@ bool Weapon::tryFire()
     }
 
     --ammo;
-    fireCooldownRemaining = FireInterval;
+    fireCooldownRemaining = GameConfig::Weapon::FireInterval;
     return true;
 }
 

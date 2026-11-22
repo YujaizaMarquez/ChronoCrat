@@ -1,5 +1,6 @@
 #pragma once
 #include "Entity.hpp"
+#include "GameConfig.hpp"
 #include "item/Inventory.hpp"
 #include <array.hpp>
 #include <memory>

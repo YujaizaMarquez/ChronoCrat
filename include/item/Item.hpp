@@ -1,4 +1,5 @@
 #pragma once
+#include "GameConfig.hpp"
 #include "Animation.hpp"
 #include <string>
 
@@ -29,7 +30,12 @@ private:
     bool collected = false;
 
 public:
-    Item(ItemType type, float durability, float damage, int frameWidth = 64, int frameHeight = 64);
+    Item(
+        ItemType type,
+        float durability,
+        float damage,
+        int frameWidth = GameConfig::Animation::DefaultFrameWidth,
+        int frameHeight = GameConfig::Animation::DefaultFrameHeight);
     bool loadSpriteSheet(const std::string& path, bool maskBlackBackground = false);
     ItemType getType() const;
     float getDurability() const;
@@ -39,7 +45,9 @@ public:
     const Animation& getAnimation() const;
     void setPosition(const sf::Vector2f& position);
     const sf::Vector2f& getPosition() const;
-    bool tryPickup(const sf::Vector2f& playerPosition, float pickupRadius = 48.f);
+    bool tryPickup(
+        const sf::Vector2f& playerPosition,
+        float pickupRadius = GameConfig::Item::PickupRadius);
     void update(float deltaTime, const sf::Vector2f& playerPosition);
     void draw(sf::RenderWindow& window) const;
     void drawHeld(sf::RenderWindow& window) const;

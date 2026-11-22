@@ -6,6 +6,7 @@
 #include "levels/LevelState.hpp"
 #include <array.hpp>
 #include <memory>
+#include <optional>
 
 class Level1 final : public LevelState
 {
@@ -15,7 +16,9 @@ public:
 protected:
     sf::Vector2f getPlayerPosition() const override;
     void handleLevelEvent(sf::Event& event) override;
-    void updateLevel(float deltaTime, bool playerMovementBlocked) override;
+    void updateLevel(
+        float deltaTime,
+        std::optional<LevelArenaBounds> activeArenaBounds) override;
     void drawWorld() override;
     void drawHud() override;
     void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) override;
@@ -24,7 +27,8 @@ private:
     Player player;
     EnemyFactory enemyFactory;
     Designar::DynArray<std::unique_ptr<Enemy>> enemies;
-    Designar::DynArray<sf::FloatRect> collisionAreas;
+    Designar::DynArray<sf::FloatRect> movementCollisionAreas;
+    Designar::DynArray<sf::FloatRect> projectileCollisionAreas;
     Designar::DynArray<Bullet> playerBullets;
     std::unique_ptr<Item> worldWeapon;
     sf::FloatRect worldBounds;
@@ -34,7 +38,10 @@ private:
 
     void initializeCollisionAreas();
     bool collidesAt(const sf::Vector2f& position) const;
-    void resolveMovement(Entity& entity, const sf::Vector2f& previousPosition);
+    void resolveMovement(
+        Entity& entity,
+        const sf::Vector2f& previousPosition,
+        const std::optional<LevelArenaBounds>& activeArenaBounds);
     void updateWorldWeapon(float deltaTime);
     void updatePlayerWeapon(float deltaTime);
     void updatePlayerBullets(float deltaTime);
