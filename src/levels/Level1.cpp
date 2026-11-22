@@ -51,11 +51,9 @@ LevelEncounter createSoldierArena(
     const float minimumSpawnX = layout.spawnMinimumMapX;
     const float maximumSpawnX = layout.spawnMaximumMapX;
     const float minimumSpawnY =
-        GameConfig::Level1::WalkableMinimumMapY +
-        GameConfig::Level1::SpawnInsetMapY;
+        GameConfig::Level1::EnemyMinimumSpawnMapY;
     const float maximumSpawnY =
-        GameConfig::Level1::WalkableMaximumMapY -
-        GameConfig::Level1::SpawnInsetMapY;
+        GameConfig::Level1::EnemyMaximumSpawnMapY;
 
     for (std::size_t index = 0;
          index < layout.soldierCount;
@@ -151,6 +149,7 @@ void Level1::handleLevelEvent(sf::Event& event)
 
 void Level1::updateLevel(
     float deltaTime,
+    bool,
     std::optional<LevelArenaBounds> activeArenaBounds)
 {
     const sf::Vector2f previousPlayerPosition = player.getPosition();
@@ -169,8 +168,50 @@ void Level1::updateLevel(
     {
         Enemy& enemy = *enemies[index];
         const sf::Vector2f previousPosition = enemy.getPosition();
-        enemy.updateAI(deltaTime, player);
-        resolveMovement(enemy, previousPosition, activeArenaBounds);
+        bool entering = false;
+        for (std::size_t entranceIndex = 0;
+             entranceIndex < enteringEnemies.size();
+             ++entranceIndex)
+        {
+            EnemyEntrance& entrance = enteringEnemies[entranceIndex];
+            if (entrance.enemy != &enemy)
+            {
+                continue;
+            }
+
+            if (enemy.getHp() <= 0)
+            {
+                enteringEnemies.remove_pos_closing_breach(entranceIndex);
+                break;
+            }
+
+            const sf::Vector2f difference =
+                entrance.target - enemy.getPosition();
+            const float distance =
+                std::sqrt(difference.x * difference.x +
+                          difference.y * difference.y);
+            if (distance <= GameConfig::Level1::EnemyEntryArrivalDistance)
+            {
+                enemy.setPosition(entrance.target);
+                enemy.move({0.f, 0.f}, deltaTime);
+                enteringEnemies.remove_pos_closing_breach(entranceIndex);
+            }
+            else
+            {
+                enemy.move(difference / distance, deltaTime);
+                resolveMovement(enemy, previousPosition, activeArenaBounds);
+                enemy.update(deltaTime);
+            }
+
+            entering = true;
+            break;
+        }
+
+        if (!entering)
+        {
+            enemy.updateAI(deltaTime, player);
+            resolveMovement(enemy, previousPosition, activeArenaBounds);
+        }
 
         if (enemy.isDead())
         {
@@ -476,7 +517,19 @@ void Level1::spawnEncounter(
         for (std::size_t index = 0; index < createdEnemies.size(); ++index)
         {
             std::unique_ptr<Enemy>& enemy = createdEnemies[index];
-            enemy->setPosition(encounter.enemies[spawnIndex + index].position);
+            const sf::Vector2f targetPosition =
+                encounter.enemies[spawnIndex + index].position;
+            const float scale = getWorldScale(window);
+            float entryX = targetPosition.x +
+                GameConfig::Level1::EnemyEntryOffsetMapX * scale;
+            if (encounter.arenaBounds.has_value())
+            {
+                entryX = std::min(
+                    entryX,
+                    encounter.arenaBounds->maximumX -
+                        GameConfig::Level1::BodyHalfWidth);
+            }
+            enemy->setPosition({entryX, targetPosition.y});
             enemy->setVisualScale(GameConfig::Level1::EnemyVisualScale);
 
             if (Soldier* soldier = dynamic_cast<Soldier*>(enemy.get()))
@@ -486,6 +539,7 @@ void Level1::spawnEncounter(
                 soldier->setSquadSlot(index, groupEnd - spawnIndex);
             }
 
+            enteringEnemies.append({enemy.get(), targetPosition});
             enemies.append(std::move(enemy));
         }
 

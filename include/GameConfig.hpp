@@ -158,14 +158,17 @@ inline constexpr float EquippedWeaponHeightOffset = -58.f;
 
 inline constexpr float WalkableMinimumMapY = 400.f;
 inline constexpr float WalkableMaximumMapY = 495.f;
-inline constexpr float SpawnInsetMapY = 10.f;
+inline constexpr float EnemyMinimumSpawnMapY = 435.f;
+inline constexpr float EnemyMaximumSpawnMapY = 465.f;
+inline constexpr float EnemyEntryOffsetMapX = 120.f;
+inline constexpr float EnemyEntryArrivalDistance = 8.f;
 inline constexpr ArenaLayout FirstArena{300.f, 1650.f, 450.f, 900.f, 5};
 inline constexpr ArenaLayout SecondArena{1800.f, 2950.f, 2270.f, 2450.f, 5};
 inline constexpr ArenaLayout ThirdArena{3100.f, 4250.f, 3150.f, 3550.f, 5};
 
 inline constexpr std::size_t CollisionObstacleCount = 3;
 inline constexpr CollisionObstacle WestRubble{
-    {1050.f, 435.f, 180.f, 60.f},
+    {1050.f, 455.f, 180.f, 40.f},
     true,
     true
 };
@@ -175,7 +178,7 @@ inline constexpr CollisionObstacle TankCover{
     true
 };
 inline constexpr CollisionObstacle BridgeApproachRubble{
-    {2880.f, 420.f, 170.f, 85.f},
+    {2880.f, 455.f, 170.f, 40.f},
     true,
     true
 };

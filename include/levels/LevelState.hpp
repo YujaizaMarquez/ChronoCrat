@@ -66,6 +66,7 @@ protected:
     virtual void handleLevelEvent(sf::Event& event) = 0;
     virtual void updateLevel(
         float deltaTime,
+        bool playerMovementBlocked,
         std::optional<LevelArenaBounds> activeArenaBounds) = 0;
     virtual void drawWorld() = 0;
     virtual void drawHud() = 0;
@@ -74,6 +75,7 @@ protected:
     void completeEncounter(int encounterIndex);
     bool areAllEncountersCompleted() const;
     bool completeLevelProgress();
+    bool isPlayerMovementBlocked() const;
     std::optional<LevelArenaBounds> getActiveArenaBounds() const;
     const sf::View& getCameraView() const;
 

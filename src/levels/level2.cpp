@@ -98,7 +98,10 @@ void Level2::handleLevelEvent(sf::Event& event)
     // Aquí se pueden agregar los eventos del nivel 2.
 }
 
-void Level2::updateLevel(float deltaTime, bool playerMovementBlocked)
+void Level2::updateLevel(
+    float deltaTime,
+    bool playerMovementBlocked,
+    std::optional<LevelArenaBounds>)
 {
     const sf::Vector2f previousPlayerPosition =
         player.getPosition();

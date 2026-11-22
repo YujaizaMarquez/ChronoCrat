@@ -6,6 +6,7 @@
 #include "levels/LevelState.hpp"
 #include <array.hpp>
 #include <memory>
+#include <optional>
 
 class Level2 final : public LevelState
 {
@@ -15,7 +16,10 @@ public:
 protected:
     sf::Vector2f getPlayerPosition() const override;
     void handleLevelEvent(sf::Event& event) override;
-    void updateLevel(float deltaTime, bool playerMovementBlocked) override;
+    void updateLevel(
+        float deltaTime,
+        bool playerMovementBlocked,
+        std::optional<LevelArenaBounds> activeArenaBounds) override;
     void drawWorld() override;
     void drawHud() override;
     void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) override;

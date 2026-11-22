@@ -46,7 +46,10 @@ LevelState::LevelState(
 
 void LevelState::update(float deltaTime)
 {
-    updateLevel(deltaTime, getActiveArenaBounds());
+    updateLevel(
+        deltaTime,
+        isPlayerMovementBlocked(),
+        getActiveArenaBounds());
     processEncounterTriggers();
     updateCamera(deltaTime);
 }
@@ -99,6 +102,20 @@ bool LevelState::completeLevelProgress()
 
     levelCompleted = true;
     return true;
+}
+
+bool LevelState::isPlayerMovementBlocked() const
+{
+    for (std::size_t index = 0; index < encounters.size(); ++index)
+    {
+        if (encounters[index].type == LevelEncounter::Type::Wave &&
+            encounterStatuses[index] == EncounterStatus::Active)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 std::optional<LevelArenaBounds> LevelState::getActiveArenaBounds() const

@@ -18,15 +18,23 @@ protected:
     void handleLevelEvent(sf::Event& event) override;
     void updateLevel(
         float deltaTime,
+        bool playerMovementBlocked,
         std::optional<LevelArenaBounds> activeArenaBounds) override;
     void drawWorld() override;
     void drawHud() override;
     void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) override;
 
 private:
+    struct EnemyEntrance
+    {
+        Enemy* enemy;
+        sf::Vector2f target;
+    };
+
     Player player;
     EnemyFactory enemyFactory;
     Designar::DynArray<std::unique_ptr<Enemy>> enemies;
+    Designar::DynArray<EnemyEntrance> enteringEnemies;
     Designar::DynArray<sf::FloatRect> movementCollisionAreas;
     Designar::DynArray<sf::FloatRect> projectileCollisionAreas;
     Designar::DynArray<Bullet> playerBullets;

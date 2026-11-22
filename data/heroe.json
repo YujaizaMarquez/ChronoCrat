@@ -6,7 +6,7 @@
     "speed": 200.0,
     "frameWidth": 64,
     "frameHeight": 64,
-    "spriteSheet": "assets/cientifico1.png",
+    "spriteSheet": "assets/personaje_principal_presente/caminando.png",
     "animations": {
         "idle": { 
             "row": 0, 
