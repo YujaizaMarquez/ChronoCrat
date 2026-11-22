@@ -20,7 +20,9 @@ class Game
     void pushState(std::unique_ptr<State> state);
     void popState();
     bool startNewGame();
-    bool startLevel(LevelEra era);
+    bool startLevel(LevelEra era, int number);
+    bool startMiniBoss(LevelEra era);
+    bool startFinalBoss();
     bool selectEra(LevelEra era);
     const Designar::MTreeNode<LevelInfo>* getCurrentLevel() const;
     bool completeCurrentLevel();

@@ -8,9 +8,13 @@
 class LevelSelectionMenu : public State
 {
 private:
+    // Raíz: jefe final.
     sf::CircleShape root;
 
+    // Hijos: jefes de las tres eras.
     std::array<sf::CircleShape, 3> eras;
+
+    // Nietos: niveles 1 y 2 de cada era.
     std::array<sf::CircleShape, 3> selectableLevels;
     std::array<sf::CircleShape, 3> lockedLevels;
 
@@ -22,7 +26,10 @@ private:
 
     void initializeTree();
     void updateHover();
-    int getSelectedLevel(sf::Vector2f mousePosition) const;
+    void updateNodeColors();
+
+    // Devuelve el identificador del círculo seleccionado.
+    int getSelectedNode(sf::Vector2f mousePosition) const;
 
     void drawConnection(
         sf::Vector2f start,

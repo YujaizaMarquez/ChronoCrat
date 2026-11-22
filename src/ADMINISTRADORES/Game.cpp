@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
+#include "levels/Level2.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
@@ -41,28 +42,61 @@ bool Game::startNewGame()
     return true;
 }
 
-bool Game::startLevel(LevelEra era)
+
+
+bool Game::startLevel(LevelEra era, int number)
 {
-    // Por ahora solamente está implementado
-    // el primer nivel de Pasado.
+    // Comprobar que el nivel solicitado esté desbloqueado.
+    const auto* nextLevel = levelTree.get_next_level(era);
 
-    if (era != LevelEra::Past || hasActiveEra)
+    if (nextLevel == nullptr ||
+        nextLevel->get_key().number != number)
     {
         return false;
     }
 
-    std::unique_ptr<State> level =
-        std::make_unique<Level1>(window.get(), this);
-
+    // Seleccionar la era.
     if (!selectEra(era))
-    {
         return false;
+
+    // Por ahora solo tenemos conectados estos dos escenarios.
+    if (era == LevelEra::Past && number == 1)
+    {
+        pushState(std::make_unique<Level1>(window.get(), this));
+        return true;
     }
 
-    pushState(std::move(level));
+    if (era == LevelEra::Present && number == 1)
+    {
+        pushState(std::make_unique<Level2>(window.get(), this));
+        return true;
+    }
 
-    return true;
+    // Los otros escenarios se conectarán cuando existan sus clases.
+    // No marcamos como iniciado un escenario que todavía no está implementado.
+    hasActiveEra = false;
+
+    return false;
 }
+
+bool Game::startMiniBoss(LevelEra era)
+{
+    if (!levelTree.can_fight_mini_boss(era))
+        return false;
+
+    // Todavía falta conectar las clases de los tres jefes.
+    return false;
+}
+
+bool Game::startFinalBoss()
+{
+    if (!canFightFinalBoss())
+        return false;
+
+    // Todavía falta conectar la clase del jefe final.
+    return false;
+}
+
 
 bool Game::selectEra(LevelEra era)
 {
@@ -85,7 +119,15 @@ const Designar::MTreeNode<LevelInfo>* Game::getCurrentLevel() const
 
 bool Game::completeCurrentLevel()
 {
-    return hasActiveEra && levelTree.complete_next_level(activeEra);
+    if (!hasActiveEra)
+        return false;
+
+    if (!levelTree.complete_next_level(activeEra))
+        return false;
+
+    hasActiveEra = false;
+
+    return true;
 }
 
 bool Game::canFightCurrentMiniBoss() const

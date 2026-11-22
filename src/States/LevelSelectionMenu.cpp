@@ -3,6 +3,10 @@
 #include "States/LevelSelectionMenu.hpp"
 #include <cmath>
 
+// ---------------------------------
+// Constructor
+// ---------------------------------
+
 LevelSelectionMenu::LevelSelectionMenu(
     sf::RenderWindow* window,
     Game* game
@@ -10,6 +14,7 @@ LevelSelectionMenu::LevelSelectionMenu(
     : State(window, game)
 {
     initializeTree();
+    updateNodeColors();
 }
 
 // ---------------------------------
@@ -23,13 +28,11 @@ void LevelSelectionMenu::initializeTree()
     const float width = static_cast<float>(size.x);
     const float height = static_cast<float>(size.y);
 
-    // RAÍZ
+    // RAÍZ: jefe final.
     root.setRadius(35.f);
     root.setOrigin({35.f, 35.f});
-    root.setFillColor(sf::Color::White);
     root.setPosition({width * 0.5f, height * 0.16f});
 
-    // Posiciones de los tres hijos
     const float positionsX[] = {
         width * 0.20f,
         width * 0.50f,
@@ -53,28 +56,89 @@ void LevelSelectionMenu::initializeTree()
             height * 0.78f
         };
 
-        // Hijos de la raíz
+        // Jefe de cada era.
         eras[i].setRadius(29.f);
         eras[i].setOrigin({29.f, 29.f});
-        eras[i].setFillColor(sf::Color::White);
         eras[i].setPosition(eraPositions[i]);
 
-        // Nietos izquierdos: seleccionables
+        // Nivel 1.
         selectableLevels[i].setRadius(13.f);
         selectableLevels[i].setOrigin({13.f, 13.f});
-        selectableLevels[i].setFillColor(sf::Color::White);
         selectableLevels[i].setPosition(selectablePositions[i]);
 
-        // Nietos derechos: no seleccionables
+        // Nivel 2.
         lockedLevels[i].setRadius(13.f);
         lockedLevels[i].setOrigin({13.f, 13.f});
-        lockedLevels[i].setFillColor(sf::Color::White);
         lockedLevels[i].setPosition(lockedPositions[i]);
     }
 }
 
 // ---------------------------------
-// Dibujar conexiones entre nodos
+// Actualizar colores según el árbol
+// ---------------------------------
+
+void LevelSelectionMenu::updateNodeColors()
+{
+    if (game == nullptr)
+        return;
+
+    const LevelEra erasList[] = {
+        LevelEra::Past,
+        LevelEra::Present,
+        LevelEra::Future
+    };
+
+    // El jefe final se habilita cuando se completan
+    // los tres jefes de las eras.
+    if (game->getLevelTree().can_fight_final_boss())
+        root.setFillColor(sf::Color::Green);
+    else
+        root.setFillColor(sf::Color(70, 70, 70));
+
+    for (int i = 0; i < 3; i++)
+    {
+        LevelEra era = erasList[i];
+
+        // Consultamos el siguiente nivel pendiente.
+        const auto* nextLevel =
+            game->getLevelTree().get_next_level(era);
+
+        // Nivel 1 disponible.
+        bool level1Unlocked =
+            nextLevel != nullptr &&
+            nextLevel->get_key().number == 1;
+
+        // Nivel 2 disponible.
+        bool level2Unlocked =
+            nextLevel != nullptr &&
+            nextLevel->get_key().number == 2;
+
+        // Jefe de era disponible.
+        bool bossUnlocked =
+            game->getLevelTree().can_fight_mini_boss(era);
+
+        selectableLevels[i].setFillColor(
+            level1Unlocked
+                ? sf::Color::Green
+                : sf::Color(70, 70, 70)
+        );
+
+        lockedLevels[i].setFillColor(
+            level2Unlocked
+                ? sf::Color::Green
+                : sf::Color(70, 70, 70)
+        );
+
+        eras[i].setFillColor(
+            bossUnlocked
+                ? sf::Color::Green
+                : sf::Color(70, 70, 70)
+        );
+    }
+}
+
+// ---------------------------------
+// Dibujar conexiones
 // ---------------------------------
 
 void LevelSelectionMenu::drawConnection(
@@ -86,7 +150,8 @@ void LevelSelectionMenu::drawConnection(
     const float dy = end.y - start.y;
 
     const float length = std::sqrt(dx * dx + dy * dy);
-    const float angle = std::atan2(dy, dx) * 180.f / 3.14159265f;
+    const float angle =
+        std::atan2(dy, dx) * 180.f / 3.14159265f;
 
     sf::RectangleShape line({length, 2.f});
 
@@ -99,7 +164,37 @@ void LevelSelectionMenu::drawConnection(
 }
 
 // ---------------------------------
-// Detectar cursor sobre los nietos
+// Detectar el nodo seleccionado
+// ---------------------------------
+
+int LevelSelectionMenu::getSelectedNode(
+    sf::Vector2f mousePosition
+) const
+{
+    // Nodo 9: jefe final.
+    if (root.getGlobalBounds().contains(mousePosition))
+        return 9;
+
+    for (int i = 0; i < 3; i++)
+    {
+        // Nodos 6, 7 y 8: jefes de las eras.
+        if (eras[i].getGlobalBounds().contains(mousePosition))
+            return 6 + i;
+
+        // Nodos 0, 1 y 2: primeros niveles.
+        if (selectableLevels[i].getGlobalBounds().contains(mousePosition))
+            return i;
+
+        // Nodos 3, 4 y 5: segundos niveles.
+        if (lockedLevels[i].getGlobalBounds().contains(mousePosition))
+            return 3 + i;
+    }
+
+    return -1;
+}
+
+// ---------------------------------
+// Actualizar efecto hover
 // ---------------------------------
 
 void LevelSelectionMenu::updateHover()
@@ -112,11 +207,12 @@ void LevelSelectionMenu::updateHover()
         static_cast<float>(mouse.y)
     );
 
-    hoveredLevel = getSelectedLevel(mousePosition);
+    int selected = getSelectedNode(mousePosition);
 
     for (int i = 0; i < 3; i++)
     {
-        if (i == hoveredLevel)
+        // Efecto para los primeros niveles.
+        if (selected == i)
         {
             selectableLevels[i].setRadius(19.f);
             selectableLevels[i].setOrigin({19.f, 19.f});
@@ -126,22 +222,19 @@ void LevelSelectionMenu::updateHover()
             selectableLevels[i].setRadius(13.f);
             selectableLevels[i].setOrigin({13.f, 13.f});
         }
-    }
-}
 
-int LevelSelectionMenu::getSelectedLevel(
-    sf::Vector2f mousePosition
-) const
-{
-    for (int i = 0; i < 3; i++)
-    {
-        if (selectableLevels[i].getGlobalBounds().contains(mousePosition))
+        // Efecto para los segundos niveles.
+        if (selected == 3 + i)
         {
-            return i;
+            lockedLevels[i].setRadius(19.f);
+            lockedLevels[i].setOrigin({19.f, 19.f});
+        }
+        else
+        {
+            lockedLevels[i].setRadius(13.f);
+            lockedLevels[i].setOrigin({13.f, 13.f});
         }
     }
-
-    return -1;
 }
 
 // ---------------------------------
@@ -150,6 +243,7 @@ int LevelSelectionMenu::getSelectedLevel(
 
 void LevelSelectionMenu::update(float deltaTime)
 {
+    updateNodeColors();
     updateHover();
 }
 
@@ -159,9 +253,10 @@ void LevelSelectionMenu::update(float deltaTime)
 
 void LevelSelectionMenu::handleEvent(sf::Event& event)
 {
-    if (const auto* resized = event.getIf<sf::Event::Resized>())
+    if (event.is<sf::Event::Resized>())
     {
         initializeTree();
+        updateNodeColors();
         return;
     }
 
@@ -175,16 +270,48 @@ void LevelSelectionMenu::handleEvent(sf::Event& event)
                 static_cast<float>(mouseEvent->position.y)
             );
 
-            int selected = getSelectedLevel(mousePosition);
+            int selected = getSelectedNode(mousePosition);
 
-            if (selected == 0 && game != nullptr)
+            if (game == nullptr)
+                return;
+
+            const LevelEra erasList[] = {
+                LevelEra::Past,
+                LevelEra::Present,
+                LevelEra::Future
+            };
+
+            // Nodos 0, 1 y 2: nivel 1.
+            if (selected >= 0 && selected <= 2)
             {
-                game->startLevel(LevelEra::Past);
+                game->startLevel(
+                    erasList[selected],
+                    1
+                );
             }
 
-            // selected == 1: primer nieto de Presente.
-            // selected == 2: primer nieto de Futuro.
-            // Se reservan para niveles futuros.
+            // Nodos 3, 4 y 5: nivel 2.
+            else if (selected >= 3 && selected <= 5)
+            {
+                game->startLevel(
+                    erasList[selected - 3],
+                    2
+                );
+            }
+
+            // Nodos 6, 7 y 8: jefes de era.
+            else if (selected >= 6 && selected <= 8)
+            {
+                game->startMiniBoss(
+                    erasList[selected - 6]
+                );
+            }
+
+            // Nodo 9: jefe final.
+            else if (selected == 9)
+            {
+                game->startFinalBoss();
+            }
         }
     }
 }
@@ -195,9 +322,7 @@ void LevelSelectionMenu::handleEvent(sf::Event& event)
 
 void LevelSelectionMenu::draw()
 {
-    window->clear(sf::Color::Black);
-
-    // Conectar raíz con sus tres hijos
+    // Conexiones de la raíz con los jefes.
     for (int i = 0; i < 3; i++)
     {
         drawConnection(
@@ -206,7 +331,7 @@ void LevelSelectionMenu::draw()
         );
     }
 
-    // Conectar cada hijo con sus dos nietos
+    // Conexiones de cada jefe con sus niveles.
     for (int i = 0; i < 3; i++)
     {
         drawConnection(
@@ -220,10 +345,8 @@ void LevelSelectionMenu::draw()
         );
     }
 
-    // Dibujar raíz
     window->draw(root);
 
-    // Dibujar hijos y nietos
     for (int i = 0; i < 3; i++)
     {
         window->draw(eras[i]);
