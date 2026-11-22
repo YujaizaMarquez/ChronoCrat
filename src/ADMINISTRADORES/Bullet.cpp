@@ -11,7 +11,7 @@ Bullet::Bullet(
     : horizontalSpeed((horizontalDirection < 0.f ? -1.f : 1.f) * std::abs(speed)),
       damage(damage)
 {
-    shape.setOrigin({12.f, 12.f});
+    shape.setOrigin({GameConfig::Bullet::Radius, GameConfig::Bullet::Radius});
     shape.setPosition(position);
     shape.setFillColor(color);
 }
@@ -44,7 +44,8 @@ bool Bullet::update(
     const float horizontalTravel = horizontalSpeed * dt;
     const int steps = std::max(
         1,
-        static_cast<int>(std::ceil(std::abs(horizontalTravel) / 4.f)));
+        static_cast<int>(std::ceil(
+            std::abs(horizontalTravel) / GameConfig::Bullet::CollisionStep)));
 
     for (int step = 1; step <= steps; ++step)
     {
@@ -53,8 +54,10 @@ bool Bullet::update(
             start.x + horizontalTravel * fraction,
             start.y);
         const sf::FloatRect bulletBounds(
-            {position.x - 12.f, position.y - 12.f},
-            {24.f, 24.f});
+            {position.x - GameConfig::Bullet::Radius,
+             position.y - GameConfig::Bullet::Radius},
+            {GameConfig::Bullet::Radius * 2.f,
+             GameConfig::Bullet::Radius * 2.f});
 
         if (position.x < worldBounds.position.x ||
             position.x > worldBounds.position.x + worldBounds.size.x ||
@@ -83,8 +86,10 @@ bool Bullet::update(
 
             const sf::Vector2f targetPosition = target->getPosition();
             const sf::FloatRect targetBounds(
-                {targetPosition.x - 32.f, targetPosition.y - 112.f},
-                {64.f, 112.f});
+                {targetPosition.x - GameConfig::Bullet::TargetHalfWidth,
+                 targetPosition.y - GameConfig::Bullet::TargetHeight},
+                {GameConfig::Bullet::TargetHalfWidth * 2.f,
+                 GameConfig::Bullet::TargetHeight});
             if (targetBounds.findIntersection(bulletBounds))
             {
                 target->setHp(target->getHp() - damage);

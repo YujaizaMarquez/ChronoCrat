@@ -1,13 +1,21 @@
 #pragma once
 
+#include "GameConfig.hpp"
 #include "State.hpp"
 #include <array.hpp>
+#include <optional>
 #include <string>
 
 struct LevelEnemySpawn
 {
     std::string enemyType;
     sf::Vector2f position;
+};
+
+struct LevelArenaBounds
+{
+    float minimumX;
+    float maximumX;
 };
 
 struct LevelEncounter
@@ -29,6 +37,7 @@ struct LevelEncounter
     Trigger trigger;
     float triggerX = 0.f;
     Designar::DynArray<LevelEnemySpawn> enemies;
+    std::optional<LevelArenaBounds> arenaBounds;
 };
 
 struct LevelWorldBounds
@@ -46,7 +55,7 @@ public:
         const std::string& backgroundPath,
         Designar::DynArray<LevelEncounter> encounters,
         LevelWorldBounds worldBounds,
-        float cameraFollowSpeed = 5.f);
+        float cameraFollowSpeed = GameConfig::LevelState::CameraFollowSpeed);
 
     void update(float deltaTime) final;
     void handleEvent(sf::Event& event) final;
@@ -55,7 +64,9 @@ public:
 protected:
     virtual sf::Vector2f getPlayerPosition() const = 0;
     virtual void handleLevelEvent(sf::Event& event) = 0;
-    virtual void updateLevel(float deltaTime, bool playerMovementBlocked) = 0;
+    virtual void updateLevel(
+        float deltaTime,
+        std::optional<LevelArenaBounds> activeArenaBounds) = 0;
     virtual void drawWorld() = 0;
     virtual void drawHud() = 0;
     virtual void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) = 0;
@@ -63,7 +74,7 @@ protected:
     void completeEncounter(int encounterIndex);
     bool areAllEncountersCompleted() const;
     bool completeLevelProgress();
-    bool isPlayerMovementBlocked() const;
+    std::optional<LevelArenaBounds> getActiveArenaBounds() const;
     const sf::View& getCameraView() const;
 
 private:

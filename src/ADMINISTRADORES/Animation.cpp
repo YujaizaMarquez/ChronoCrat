@@ -24,7 +24,10 @@ void Animation::applyTextureRect() {
 
 void Animation::attachSprite(sf::Sprite& sprite) {
     targetSprite = &sprite;
-    targetSprite->setOrigin({frameWidth / 2.f, static_cast<float>(frameHeight)});
+    targetSprite->setOrigin({
+        frameWidth / 2.f,
+        static_cast<float>(frameHeight)
+    });
     targetSprite->setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
 }
 

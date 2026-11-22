@@ -8,8 +8,11 @@
 
 Game::Game() 
 {
-    window = std::make_unique<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), "ChronoCrat", sf::State::Fullscreen);
-    window->setFramerateLimit(60);
+    window = std::make_unique<sf::RenderWindow>(
+        sf::VideoMode::getDesktopMode(),
+        GameConfig::Window::Title,
+        sf::State::Fullscreen);
+    window->setFramerateLimit(GameConfig::Window::FrameRateLimit);
     states.push(std::make_unique<Menu>(window.get(), this));
 }
 

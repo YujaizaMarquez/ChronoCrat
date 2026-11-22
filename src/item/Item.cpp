@@ -29,9 +29,11 @@ bool Item::loadSpriteSheet(const std::string& path, bool maskBlackBackground)
             for (unsigned int x = 0; x < imageSize.x; ++x)
             {
                 const sf::Color pixel = image.getPixel({x, y});
-                if (pixel.r <= 8 && pixel.g <= 8 && pixel.b <= 8)
+                if (pixel.r <= GameConfig::Item::BlackMaskThreshold &&
+                    pixel.g <= GameConfig::Item::BlackMaskThreshold &&
+                    pixel.b <= GameConfig::Item::BlackMaskThreshold)
                 {
-                    image.setPixel({x, y}, sf::Color(0, 0, 0, 0));
+                    image.setPixel({x, y}, sf::Color::Transparent);
                 }
             }
         }
@@ -135,16 +137,17 @@ void Item::update(float deltaTime, const sf::Vector2f& playerPosition)
     if (beingPickedUp)
     {
         const float distance = std::sqrt(distanceSquared);
-        if (distance <= 8.f)
+        if (distance <= GameConfig::Item::PickupArrivalDistance)
         {
             collected = true;
             return;
         }
 
-        const float travelDistance = std::min(distance, 360.f * dt);
+        const float travelDistance =
+            std::min(distance, GameConfig::Item::PickupSpeed * dt);
         position.x += toPlayer.x / distance * travelDistance;
         position.y += toPlayer.y / distance * travelDistance;
-        if (distance - travelDistance <= 8.f)
+        if (distance - travelDistance <= GameConfig::Item::PickupArrivalDistance)
         {
             position = playerPosition;
             collected = true;
@@ -157,7 +160,9 @@ void Item::update(float deltaTime, const sf::Vector2f& playerPosition)
     }
 
     position.x = groundPosition.x;
-    position.y = groundPosition.y + std::sin(elapsedTime * 3.f) * 4.f;
+    position.y = groundPosition.y +
+                 std::sin(elapsedTime * GameConfig::Item::BobFrequency) *
+                     GameConfig::Item::BobAmplitude;
     if (textureLoaded)
     {
         sprite.setPosition(position);

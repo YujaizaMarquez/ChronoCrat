@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GameConfig.hpp"
 #include "item/Item.hpp"
 #include <array.hpp>
 #include <cstddef>
@@ -8,7 +9,7 @@
 class Inventory
 {
 public:
-    static constexpr std::size_t Capacity = 5;
+    static constexpr std::size_t Capacity = GameConfig::Inventory::Capacity;
 
     Inventory();
     Inventory(const Inventory&) = delete;

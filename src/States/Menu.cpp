@@ -1,33 +1,42 @@
 #include "Game.hpp"
 #include "States/Menu.hpp"
 #include <stdexcept>
+#include <string>
 
 Menu::Menu(sf::RenderWindow* window, Game* game)
     : State(window, game),
       backgroundSprite(backgroundTexture)
 {
     // 1. Cargar spritesheet del fondo
-    if (!backgroundTexture.loadFromFile("assets/fondo_animado.png"))
+    if (!backgroundTexture.loadFromFile(GameConfig::Menu::BackgroundPath))
     {
         throw std::runtime_error(
-            "No se pudo cargar assets/fondo_animado.png"
+            std::string("No se pudo cargar ") + GameConfig::Menu::BackgroundPath
         );
     }
 
     const sf::Vector2u textureSize = backgroundTexture.getSize();
 
     // Comprobar que existan los cuatro frames
-    if (textureSize.x < FRAME_WIDTH * FRAME_COUNT)
+    if (textureSize.x <
+        GameConfig::Menu::FrameWidth * GameConfig::Menu::FrameCount)
     {
         throw std::runtime_error(
-            "El spritesheet debe tener al menos 5120 pixeles de ancho"
+            "El spritesheet debe tener al menos " +
+            std::to_string(
+                GameConfig::Menu::FrameWidth * GameConfig::Menu::FrameCount) +
+            " pixeles de ancho"
         );
     }
 
-    if (textureSize.x != FRAME_WIDTH * FRAME_COUNT)
+    if (textureSize.x !=
+        GameConfig::Menu::FrameWidth * GameConfig::Menu::FrameCount)
     {
         throw std::runtime_error(
-            "El ancho del spritesheet debe ser exactamente 5120 pixeles"
+            "El ancho del spritesheet debe ser exactamente " +
+            std::to_string(
+                GameConfig::Menu::FrameWidth * GameConfig::Menu::FrameCount) +
+            " pixeles"
         );
     }
 
@@ -38,7 +47,7 @@ Menu::Menu(sf::RenderWindow* window, Game* game)
         sf::IntRect(
             {0, 0},
             {
-                FRAME_WIDTH,
+                GameConfig::Menu::FrameWidth,
                 static_cast<int>(textureSize.y)
             }
         )
@@ -49,19 +58,31 @@ Menu::Menu(sf::RenderWindow* window, Game* game)
     initializeButtons();
 
     // 2. Configurar botón de cerrar
-    closeButton.setRadius(20.f);
-    closeButton.setFillColor(sf::Color(100, 35, 35, 220));
+    closeButton.setRadius(GameConfig::Menu::CloseButtonRadius);
+    closeButton.setFillColor(GameConfig::Menu::CloseButtonColor);
 
     // Primera línea de la X
-    crossLine1.setSize({20.f, 3.f});
-    crossLine1.setOrigin({10.f, 1.5f});
-    crossLine1.setRotation(sf::degrees(45.f));
+    crossLine1.setSize({
+        GameConfig::Menu::CloseCrossSize,
+        GameConfig::Menu::CloseCrossThickness
+    });
+    crossLine1.setOrigin({
+        GameConfig::Menu::CloseCrossOriginX,
+        GameConfig::Menu::CloseCrossOriginY
+    });
+    crossLine1.setRotation(sf::degrees(GameConfig::Menu::CloseCrossAngle));
     crossLine1.setFillColor(sf::Color::White);
 
     // Segunda línea de la X
-    crossLine2.setSize({20.f, 3.f});
-    crossLine2.setOrigin({10.f, 1.5f});
-    crossLine2.setRotation(sf::degrees(-45.f));
+    crossLine2.setSize({
+        GameConfig::Menu::CloseCrossSize,
+        GameConfig::Menu::CloseCrossThickness
+    });
+    crossLine2.setOrigin({
+        GameConfig::Menu::CloseCrossOriginX,
+        GameConfig::Menu::CloseCrossOriginY
+    });
+    crossLine2.setRotation(sf::degrees(-GameConfig::Menu::CloseCrossAngle));
     crossLine2.setFillColor(sf::Color::White);
 
     updateClosePosition();
@@ -75,7 +96,7 @@ void Menu::updateBackgroundScale()
     const sf::Vector2u windowSize = window->getSize();
 
     backgroundSprite.setScale({
-        static_cast<float>(windowSize.x) / FRAME_WIDTH,
+        static_cast<float>(windowSize.x) / GameConfig::Menu::FrameWidth,
         static_cast<float>(windowSize.y) / textureSize.y
     });      
 }
@@ -86,17 +107,27 @@ void Menu::updateClosePosition()
 {
     const sf::Vector2u windowSize = window->getSize();
 
-    const float x = static_cast<float>(windowSize.x) - 55.f;
-    const float y = 15.f;
+    const float x = static_cast<float>(windowSize.x) -
+                    GameConfig::Menu::CloseButtonRightOffset;
+    const float y = GameConfig::Menu::CloseButtonTopOffset;
 
     closeButton.setPosition({x, y});
 
-    crossLine1.setPosition({x + 20.f, y + 20.f});
-    crossLine2.setPosition({x + 20.f, y + 20.f});
+    crossLine1.setPosition({
+        x + GameConfig::Menu::CloseCrossOffset,
+        y + GameConfig::Menu::CloseCrossOffset
+    });
+    crossLine2.setPosition({
+        x + GameConfig::Menu::CloseCrossOffset,
+        y + GameConfig::Menu::CloseCrossOffset
+    });
 
     closeBounds = sf::FloatRect(
         {x, y},
-        {40.f, 40.f}
+        {
+            GameConfig::Menu::CloseBoundsSize,
+            GameConfig::Menu::CloseBoundsSize
+        }
     );
 }
 
@@ -107,19 +138,20 @@ void Menu::update(float deltaTime)
     // Animación del fondo
     animationTimer += deltaTime;
 
-    if (animationTimer >= FRAME_DURATION)
+    if (animationTimer >= GameConfig::Menu::FrameDuration)
     {
-        animationTimer -= FRAME_DURATION;
+        animationTimer -= GameConfig::Menu::FrameDuration;
 
-        currentFrame = (currentFrame + 1) % FRAME_COUNT;
+        currentFrame =
+            (currentFrame + 1) % GameConfig::Menu::FrameCount;
 
         const sf::Vector2u textureSize = backgroundTexture.getSize();
 
         backgroundSprite.setTextureRect(
             sf::IntRect(
-                {currentFrame * FRAME_WIDTH, 0},
+                {currentFrame * GameConfig::Menu::FrameWidth, 0},
                 {
-                    FRAME_WIDTH,
+                    GameConfig::Menu::FrameWidth,
                     static_cast<int>(textureSize.y)
                 }
             )
@@ -141,13 +173,13 @@ void Menu::update(float deltaTime)
     if (mouseOverClose)
     {
         closeButton.setFillColor(
-            sf::Color(200, 55, 55, 240)
+            GameConfig::Menu::CloseButtonHoverColor
         );
     }
     else
     {
         closeButton.setFillColor(
-            sf::Color(100, 35, 35, 220)
+            GameConfig::Menu::CloseButtonColor
         );
     }
 }
@@ -191,40 +223,38 @@ void Menu::handleEvent(sf::Event& event)
 void Menu::initializeButtons()
 {
     const sf::Vector2u windowSize = window->getSize();
-    const float scaleX = static_cast<float>(windowSize.x) / 1920.f;
-    const float scaleY = static_cast<float>(windowSize.y) / 1080.f;
-    const sf::Vector2f positions[] = {
-        {686.f * scaleX, 509.f * scaleY},
-        {686.f * scaleX, 643.f * scaleY},
-        {686.f * scaleX, 772.f * scaleY}
-    };
-
-    const sf::Vector2f sizes[] = {
-        {560.f * scaleX, 85.f * scaleY},
-        {560.f * scaleX, 83.f * scaleY},
-        {560.f * scaleX, 92.f * scaleY}
-    };
-
-    for (int i = 0; i < 3; i++)
+    const float scaleX =
+        static_cast<float>(windowSize.x) / GameConfig::Menu::ReferenceWidth;
+    const float scaleY =
+        static_cast<float>(windowSize.y) / GameConfig::Menu::ReferenceHeight;
+    const auto configureButton = [&](std::size_t index,
+                                     const GameConfig::Menu::ButtonLayout& layout)
     {
-        buttons[i].setPosition(positions[i]);
-        buttons[i].setSize(sizes[i]);
+        buttons[index].setPosition({layout.x * scaleX, layout.y * scaleY});
+        buttons[index].setSize({
+            layout.width * scaleX,
+            layout.height * scaleY
+        });
 
         // Interior transparente
-        buttons[i].setFillColor(sf::Color::Transparent);
+        buttons[index].setFillColor(sf::Color::Transparent);
 
         // Contorno negro
-        buttons[i].setOutlineColor(sf::Color::Black);
-        buttons[i].setOutlineThickness(2.f);
-    }
+        buttons[index].setOutlineColor(sf::Color::Black);
+        buttons[index].setOutlineThickness(
+            GameConfig::Menu::ButtonOutlineThickness);
+    };
+    configureButton(0, GameConfig::Menu::NewGameButton);
+    configureButton(1, GameConfig::Menu::ContinueButton);
+    configureButton(2, GameConfig::Menu::ExitButton);
 }
 int Menu::getSelectedButton(sf::Vector2f mousePosition) const
 {
-    for (int i = 0; i < 3; i++)
+    for (std::size_t i = 0; i < GameConfig::Menu::ButtonCount; ++i)
     {
         if (buttons[i].getGlobalBounds().contains(mousePosition))
         {
-            return i;
+            return static_cast<int>(i);
         }
     }
 
@@ -237,7 +267,7 @@ void Menu::draw()
     // Fondo animado
     window->draw(backgroundSprite);
      // Dibujar los tres botones
-    for (int i = 0; i < 3; i++)
+    for (std::size_t i = 0; i < GameConfig::Menu::ButtonCount; ++i)
     {
         window->draw(buttons[i]);
     }

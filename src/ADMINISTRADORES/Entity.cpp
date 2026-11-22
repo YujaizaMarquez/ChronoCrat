@@ -3,7 +3,9 @@
 #include <iostream>
 
 Entity::Entity()
-    : sprite(texture), anim(64, 64) {}
+    : sprite(texture),
+      anim(GameConfig::Animation::DefaultFrameWidth,
+           GameConfig::Animation::DefaultFrameHeight) {}
 
 bool Entity::loadFromJson(const std::string& jsonPath) {
     try {
@@ -16,15 +18,15 @@ bool Entity::loadFromJson(const std::string& jsonPath) {
         nlohmann::json j;
         file >> j;
 
-        id = j.value("id", "heroe");
-        name = j.value("name", "Heroe");
-        maxHp = j.value("maxHp", 250);
+        id = j.value("id", std::string(GameConfig::Entity::DefaultId));
+        name = j.value("name", std::string(GameConfig::Entity::DefaultName));
+        maxHp = j.value("maxHp", GameConfig::Entity::DefaultHealth);
         hp = maxHp;
-        attackDamage = j.value("attack", 25);
-        speed = j.value("speed", 180.f);
+        attackDamage = j.value("attack", GameConfig::Entity::DefaultAttackDamage);
+        speed = j.value("speed", GameConfig::Entity::DefaultSpeed);
 
-        int fw = j.value("frameWidth", 64);
-        int fh = j.value("frameHeight", 64);
+        int fw = j.value("frameWidth", GameConfig::Animation::DefaultFrameWidth);
+        int fh = j.value("frameHeight", GameConfig::Animation::DefaultFrameHeight);
         anim = Animation(fw, fh);
 
         std::string texPath = j.value("spriteSheet", "");

@@ -1,49 +1,98 @@
 #include "levels/Level1.hpp"
+#include "GameConfig.hpp"
 #include "Soldier.hpp"
 #include "item/Weapon.hpp"
 #include <algorithm>
-#include <iterator>
+#include <cmath>
 #include <stdexcept>
 #include <utility>
 
 namespace
 {
+float getWorldScale(const sf::RenderWindow* window)
+{
+    return static_cast<float>(window->getSize().y) /
+           GameConfig::Level1::MapImageHeight;
+}
+
 LevelWorldBounds getWorldBounds(const sf::RenderWindow* window)
 {
-    const sf::Vector2u size = window->getSize();
+    const float scale = getWorldScale(window);
     return {
         {0.f, 0.f},
-        {static_cast<float>(size.x), static_cast<float>(size.y)}
+        {
+            GameConfig::Level1::MapImageWidth * scale,
+            GameConfig::Level1::MapImageHeight * scale
+        }
     };
+}
+
+LevelEncounter createSoldierArena(
+    const GameConfig::Level1::ArenaLayout& layout,
+    float scale)
+{
+    LevelEncounter encounter{
+        LevelEncounter::Type::Wave,
+        LevelEncounter::Trigger::AtPosition,
+        layout.minimumMapX * scale,
+        Designar::DynArray<LevelEnemySpawn>()
+    };
+    encounter.arenaBounds = LevelArenaBounds{
+        layout.minimumMapX * scale,
+        layout.maximumMapX * scale
+    };
+
+    const std::size_t columns = std::max<std::size_t>(
+        1,
+        static_cast<std::size_t>(
+            std::ceil(std::sqrt(static_cast<float>(layout.soldierCount)))));
+    const std::size_t rows =
+        (layout.soldierCount + columns - 1) / columns;
+    const float minimumSpawnX = layout.spawnMinimumMapX;
+    const float maximumSpawnX = layout.spawnMaximumMapX;
+    const float minimumSpawnY =
+        GameConfig::Level1::WalkableMinimumMapY +
+        GameConfig::Level1::SpawnInsetMapY;
+    const float maximumSpawnY =
+        GameConfig::Level1::WalkableMaximumMapY -
+        GameConfig::Level1::SpawnInsetMapY;
+
+    for (std::size_t index = 0;
+         index < layout.soldierCount;
+         ++index)
+    {
+        const std::size_t column = index % columns;
+        const std::size_t row = index / columns;
+        const float mapX = columns == 1
+            ? (minimumSpawnX + maximumSpawnX) / 2.f
+            : minimumSpawnX +
+                  (maximumSpawnX - minimumSpawnX) *
+                      static_cast<float>(column) /
+                  static_cast<float>(columns - 1);
+        const float mapY = rows == 1
+            ? (minimumSpawnY + maximumSpawnY) / 2.f
+            : minimumSpawnY +
+                  (maximumSpawnY - minimumSpawnY) *
+                      static_cast<float>(row) /
+                  static_cast<float>(rows - 1);
+
+        encounter.enemies.append({
+            "soldier",
+            {mapX * scale, mapY * scale}
+        });
+    }
+
+    return encounter;
 }
 
 Designar::DynArray<LevelEncounter> createLevel1Encounters(
     const sf::RenderWindow* window)
 {
-    const sf::Vector2u windowSize = window->getSize();
-    LevelEncounter wave{
-        LevelEncounter::Type::Wave,
-        LevelEncounter::Trigger::AtPosition,
-        0.f,
-        Designar::DynArray<LevelEnemySpawn>()
-    };
-
-    constexpr std::size_t soldierCount = 2;
-    for (std::size_t index = 0; index < soldierCount; ++index)
-    {
-        const float horizontalPosition =
-            0.52f + static_cast<float>(index) * 0.08f;
-        wave.enemies.append({
-            "soldier",
-            {
-                static_cast<float>(windowSize.x) * horizontalPosition,
-                static_cast<float>(windowSize.y) * 0.82f
-            }
-        });
-    }
-
+    const float scale = getWorldScale(window);
     Designar::DynArray<LevelEncounter> encounters;
-    encounters.append(std::move(wave));
+    encounters.append(createSoldierArena(GameConfig::Level1::FirstArena, scale));
+    encounters.append(createSoldierArena(GameConfig::Level1::SecondArena, scale));
+    encounters.append(createSoldierArena(GameConfig::Level1::ThirdArena, scale));
     return encounters;
 }
 }
@@ -52,27 +101,30 @@ Level1::Level1(sf::RenderWindow* window, Game* game)
     : LevelState(
           window,
           game,
-          "assets/2guerra.png",
+          GameConfig::Level1::BackgroundPath,
           createLevel1Encounters(window),
           getWorldBounds(window))
 {
-    const sf::Vector2u windowSize = window->getSize();
-
-    initializeCollisionAreas();
+    const LevelWorldBounds bounds = getWorldBounds(window);
     worldBounds = sf::FloatRect(
-        {0.f, 0.f},
-        {static_cast<float>(windowSize.x), static_cast<float>(windowSize.y)});
+        bounds.minimum,
+        bounds.maximum - bounds.minimum);
+    initializeCollisionAreas();
+    const float scale = getWorldScale(window);
     player.setPosition({
-        static_cast<float>(windowSize.x) * 0.15f,
-        static_cast<float>(windowSize.y) * 0.82f
+        GameConfig::Level1::PlayerStartMapX * scale,
+        GameConfig::Level1::PlayerStartMapY * scale
     });
-    player.setVisualScale(2.5f);
-    player.setCombatStats(35, 130.f, 0.45f);
+    player.setVisualScale(GameConfig::Level1::PlayerVisualScale);
+    player.setCombatStats(
+        GameConfig::Level1::PlayerAttackDamage,
+        GameConfig::Level1::PlayerAttackRange,
+        GameConfig::Level1::PlayerAttackCooldown);
 
     worldWeapon = std::make_unique<Weapon>();
     worldWeapon->setPosition({
-        player.getPosition().x + 60.f,
-        player.getPosition().y - 8.f
+        player.getPosition().x + GameConfig::Level1::WeaponSpawnOffsetX,
+        player.getPosition().y + GameConfig::Level1::WeaponSpawnOffsetY
     });
 }
 
@@ -93,14 +145,17 @@ void Level1::handleLevelEvent(sf::Event& event)
         return;
     }
 
-    worldWeapon->tryPickup(player.getPosition(), 80.f);
+    worldWeapon->tryPickup(
+        player.getPosition(), GameConfig::Level1::WeaponPickupRadius);
 }
 
-void Level1::updateLevel(float deltaTime, bool)
+void Level1::updateLevel(
+    float deltaTime,
+    std::optional<LevelArenaBounds> activeArenaBounds)
 {
     const sf::Vector2f previousPlayerPosition = player.getPosition();
     player.update(deltaTime, !playerDefeated);
-    resolveMovement(player, previousPlayerPosition);
+    resolveMovement(player, previousPlayerPosition, activeArenaBounds);
 
     if (player.isDead())
     {
@@ -115,7 +170,7 @@ void Level1::updateLevel(float deltaTime, bool)
         Enemy& enemy = *enemies[index];
         const sf::Vector2f previousPosition = enemy.getPosition();
         enemy.updateAI(deltaTime, player);
-        resolveMovement(enemy, previousPosition);
+        resolveMovement(enemy, previousPosition, activeArenaBounds);
 
         if (enemy.isDead())
         {
@@ -151,10 +206,12 @@ void Level1::drawWorld()
     if (Weapon* weapon = player.getEquippedWeapon())
     {
         const sf::Vector2f playerPosition = player.getPosition();
-        const float facingOffset = player.isFacingRight() ? 18.f : -18.f;
+        const float facingOffset = player.isFacingRight()
+            ? GameConfig::Level1::EquippedWeaponFacingOffset
+            : -GameConfig::Level1::EquippedWeaponFacingOffset;
         weapon->setPosition({
             playerPosition.x + facingOffset,
-            playerPosition.y - 58.f
+            playerPosition.y + GameConfig::Level1::EquippedWeaponHeightOffset
         });
         weapon->getAnimation().setFacingRight(player.isFacingRight());
         weapon->drawHeld(*window);
@@ -177,10 +234,12 @@ void Level1::drawHud()
     const auto drawHealthBar = [this](const sf::Vector2f& position, int hp, int maxHp,
                                       const sf::Color& color)
     {
-        const sf::Vector2f size(220.f, 18.f);
+        const sf::Vector2f size(
+            GameConfig::Level1::HealthBarWidth,
+            GameConfig::Level1::HealthBarHeight);
         sf::RectangleShape background(size);
         background.setPosition(position);
-        background.setFillColor(sf::Color(30, 30, 30, 220));
+        background.setFillColor(GameConfig::Level1::HealthBarBackground);
         window->draw(background);
 
         const float fraction = maxHp > 0
@@ -192,15 +251,20 @@ void Level1::drawHud()
         window->draw(fill);
     };
 
-    drawHealthBar({20.f, 20.f}, player.getHp(), player.getMaxHp(),
-                  sf::Color(55, 190, 85));
+    drawHealthBar(
+        {GameConfig::Level1::HealthBarMargin, GameConfig::Level1::HealthBarMargin},
+        player.getHp(),
+        player.getMaxHp(),
+        GameConfig::Level1::PlayerHealthBarColor);
     if (!enemies.is_empty())
     {
         drawHealthBar(
-            {static_cast<float>(windowSize.x) - 240.f, 20.f},
+            {static_cast<float>(windowSize.x) -
+                 GameConfig::Level1::EnemyHealthBarRightOffset,
+             GameConfig::Level1::HealthBarMargin},
             enemies[0]->getHp(),
             enemies[0]->getMaxHp(),
-            sf::Color(200, 55, 45));
+            GameConfig::Level1::EnemyHealthBarColor);
     }
 
     if (const Weapon* weapon = player.getEquippedWeapon())
@@ -244,12 +308,13 @@ void Level1::updatePlayerWeapon(float deltaTime)
     const float direction = player.isFacingRight() ? 1.f : -1.f;
     playerBullets.append(Bullet(
         sf::Vector2f(
-            playerPosition.x + direction * 38.f,
-            playerPosition.y - 74.f),
+            playerPosition.x +
+                direction * GameConfig::Level1::PlayerBulletSpawnOffsetX,
+            playerPosition.y + GameConfig::Level1::PlayerBulletSpawnOffsetY),
         direction,
-        700.f,
+        GameConfig::Level1::PlayerBulletSpeed,
         static_cast<int>(weapon->getDamage()),
-        sf::Color(250, 210, 80)));
+        GameConfig::Level1::PlayerBulletColor));
 
     if (weapon->getAmmo() == 0)
     {
@@ -279,7 +344,7 @@ void Level1::updatePlayerBullets(float deltaTime)
         if (!playerBullets[index].update(
                 deltaTime,
                 targets,
-                collisionAreas,
+                projectileCollisionAreas,
                 worldBounds))
         {
             playerBullets.remove_pos(index);
@@ -293,21 +358,38 @@ void Level1::updatePlayerBullets(float deltaTime)
 
 void Level1::drawAmmoCounter(int ammo)
 {
-    const sf::Vector2f panelPosition(20.f, 46.f);
-    sf::RectangleShape panel({108.f, 40.f});
+    const sf::Vector2f panelPosition(
+        GameConfig::Level1::AmmoPanelX,
+        GameConfig::Level1::AmmoPanelY);
+    sf::RectangleShape panel({
+        GameConfig::Level1::AmmoPanelWidth,
+        GameConfig::Level1::AmmoPanelHeight
+    });
     panel.setPosition(panelPosition);
-    panel.setFillColor(sf::Color(25, 25, 25, 220));
+    panel.setFillColor(GameConfig::Level1::AmmoPanelColor);
     window->draw(panel);
 
-    sf::RectangleShape bulletBody({13.f, 5.f});
-    bulletBody.setPosition({32.f, 63.f});
-    bulletBody.setFillColor(sf::Color(235, 220, 165));
+    sf::RectangleShape bulletBody({
+        GameConfig::Level1::AmmoIconBodyWidth,
+        GameConfig::Level1::AmmoIconBodyHeight
+    });
+    bulletBody.setPosition({
+        GameConfig::Level1::AmmoIconBodyX,
+        GameConfig::Level1::AmmoIconBodyY
+    });
+    bulletBody.setFillColor(GameConfig::Level1::AmmoIconColor);
     window->draw(bulletBody);
 
-    sf::CircleShape bulletTip(2.5f);
-    bulletTip.setOrigin({2.5f, 2.5f});
-    bulletTip.setPosition({46.f, 65.5f});
-    bulletTip.setFillColor(sf::Color(235, 220, 165));
+    sf::CircleShape bulletTip(GameConfig::Level1::AmmoIconTipRadius);
+    bulletTip.setOrigin({
+        GameConfig::Level1::AmmoIconTipRadius,
+        GameConfig::Level1::AmmoIconTipRadius
+    });
+    bulletTip.setPosition({
+        GameConfig::Level1::AmmoIconTipX,
+        GameConfig::Level1::AmmoIconTipY
+    });
+    bulletTip.setFillColor(GameConfig::Level1::AmmoIconColor);
     window->draw(bulletTip);
 
     constexpr bool segments[10][7] = {
@@ -322,34 +404,50 @@ void Level1::drawAmmoCounter(int ammo)
         {true, true, true, true, true, true, true},
         {true, true, true, true, false, true, true}
     };
-    const sf::Vector2f segmentOffsets[7] = {
-        {4.f, 0.f}, {14.f, 3.f}, {14.f, 14.f}, {4.f, 24.f},
-        {0.f, 14.f}, {0.f, 3.f}, {4.f, 12.f}
-    };
-    const sf::Vector2f segmentSizes[7] = {
-        {11.f, 3.f}, {3.f, 10.f}, {3.f, 10.f}, {11.f, 3.f},
-        {3.f, 10.f}, {3.f, 10.f}, {11.f, 3.f}
-    };
-
     const auto drawDigit = [&](int digit, const sf::Vector2f& position)
     {
-        for (int segment = 0; segment < 7; ++segment)
+        const auto drawSegment = [&](bool enabled,
+                                     const GameConfig::Rect& segment)
         {
-            if (!segments[digit][segment])
+            if (!enabled)
             {
-                continue;
+                return;
             }
 
-            sf::RectangleShape shape(segmentSizes[segment]);
-            shape.setPosition(position + segmentOffsets[segment]);
-            shape.setFillColor(sf::Color(245, 220, 110));
+            sf::RectangleShape shape({segment.width, segment.height});
+            shape.setPosition({
+                position.x + segment.x,
+                position.y + segment.y
+            });
+            shape.setFillColor(GameConfig::Level1::AmmoDigitColor);
             window->draw(shape);
-        }
+        };
+
+        drawSegment(segments[digit][0], GameConfig::Level1::AmmoSegmentTop);
+        drawSegment(
+            segments[digit][1],
+            GameConfig::Level1::AmmoSegmentUpperRight);
+        drawSegment(
+            segments[digit][2],
+            GameConfig::Level1::AmmoSegmentLowerRight);
+        drawSegment(segments[digit][3], GameConfig::Level1::AmmoSegmentBottom);
+        drawSegment(
+            segments[digit][4],
+            GameConfig::Level1::AmmoSegmentLowerLeft);
+        drawSegment(
+            segments[digit][5],
+            GameConfig::Level1::AmmoSegmentUpperLeft);
+        drawSegment(segments[digit][6], GameConfig::Level1::AmmoSegmentMiddle);
     };
 
-    const int clampedAmmo = std::clamp(ammo, 0, Weapon::MagazineCapacity);
-    drawDigit(clampedAmmo / 10, {57.f, 52.f});
-    drawDigit(clampedAmmo % 10, {78.f, 52.f});
+    const int clampedAmmo =
+        std::clamp(ammo, 0, GameConfig::Weapon::MagazineCapacity);
+    drawDigit(
+        clampedAmmo / 10,
+        {GameConfig::Level1::AmmoFirstDigitX, GameConfig::Level1::AmmoDigitY});
+    drawDigit(
+        clampedAmmo % 10,
+        {GameConfig::Level1::AmmoSecondDigitX, GameConfig::Level1::AmmoDigitY});
 }
 
 void Level1::spawnEncounter(
@@ -379,11 +477,13 @@ void Level1::spawnEncounter(
         {
             std::unique_ptr<Enemy>& enemy = createdEnemies[index];
             enemy->setPosition(encounter.enemies[spawnIndex + index].position);
-            enemy->setVisualScale(2.5f);
+            enemy->setVisualScale(GameConfig::Level1::EnemyVisualScale);
 
             if (Soldier* soldier = dynamic_cast<Soldier*>(enemy.get()))
             {
-                soldier->setCollisionGeometry(collisionAreas, worldBounds);
+                soldier->setCollisionGeometry(
+                    projectileCollisionAreas, worldBounds);
+                soldier->setSquadSlot(index, groupEnd - spawnIndex);
             }
 
             enemies.append(std::move(enemy));
@@ -395,42 +495,49 @@ void Level1::spawnEncounter(
 
 void Level1::initializeCollisionAreas()
 {
-    constexpr float mapWidth = 1376.f;
-    constexpr float mapHeight = 768.f;
-    const sf::Vector2u windowSize = window->getSize();
-    const float scaleX = static_cast<float>(windowSize.x) / mapWidth;
-    const float scaleY = static_cast<float>(windowSize.y) / mapHeight;
-    const sf::FloatRect sourceAreas[] = {
-        {{0.f, 0.f}, {360.f, 480.f}},
-        {{0.f, 480.f}, {360.f, 90.f}},
-        {{350.f, 390.f}, {195.f, 115.f}},
-        {{570.f, 385.f}, {155.f, 115.f}},
-        {{770.f, 420.f}, {230.f, 115.f}},
-        {{1110.f, 0.f}, {266.f, 490.f}},
-        {{1100.f, 485.f}, {276.f, 90.f}}
-    };
+    const float scale = getWorldScale(window);
+    movementCollisionAreas.clear();
+    projectileCollisionAreas.clear();
+    movementCollisionAreas.reserve(
+        GameConfig::Level1::CollisionObstacleCount);
+    projectileCollisionAreas.reserve(
+        GameConfig::Level1::CollisionObstacleCount);
 
-    collisionAreas.clear();
-    collisionAreas.reserve(std::size(sourceAreas));
-    for (std::size_t index = 0; index < std::size(sourceAreas); ++index)
+    const auto appendObstacle = [&](const GameConfig::CollisionObstacle& obstacle)
     {
-        const sf::FloatRect& area = sourceAreas[index];
-        collisionAreas.append(sf::FloatRect(
-            sf::Vector2f(area.position.x * scaleX, area.position.y * scaleY),
-            sf::Vector2f(area.size.x * scaleX, area.size.y * scaleY)));
-    }
+        const GameConfig::Rect& bounds = obstacle.bounds;
+        const sf::FloatRect area(
+            {bounds.x * scale, bounds.y * scale},
+            {bounds.width * scale, bounds.height * scale});
+        if (obstacle.blocksMovement)
+        {
+            movementCollisionAreas.append(area);
+        }
+        if (obstacle.blocksProjectiles)
+        {
+            projectileCollisionAreas.append(area);
+        }
+    };
+    appendObstacle(GameConfig::Level1::WestRubble);
+    appendObstacle(GameConfig::Level1::TankCover);
+    appendObstacle(GameConfig::Level1::BridgeApproachRubble);
 }
 
 bool Level1::collidesAt(const sf::Vector2f& position) const
 {
-    const sf::Vector2u windowSize = window->getSize();
-    constexpr float bodyHalfWidth = 28.f;
-    constexpr float bodyHeight = 36.f;
+    constexpr float bodyHalfWidth = GameConfig::Level1::BodyHalfWidth;
+    constexpr float bodyHeight = GameConfig::Level1::BodyHeight;
+    const float scale = getWorldScale(window);
+    const float minimumY = GameConfig::Level1::WalkableMinimumMapY * scale;
+    const float maximumY = GameConfig::Level1::WalkableMaximumMapY * scale;
+    const float minimumX = worldBounds.position.x + bodyHalfWidth;
+    const float maximumX =
+        worldBounds.position.x + worldBounds.size.x - bodyHalfWidth;
 
-    if (position.x < bodyHalfWidth ||
-        position.x > static_cast<float>(windowSize.x) - bodyHalfWidth ||
-        position.y < bodyHeight ||
-        position.y > static_cast<float>(windowSize.y))
+    if (position.x < minimumX ||
+        position.x > maximumX ||
+        position.y < minimumY ||
+        position.y > maximumY)
     {
         return true;
     }
@@ -438,7 +545,7 @@ bool Level1::collidesAt(const sf::Vector2f& position) const
     const sf::FloatRect body(
         {position.x - bodyHalfWidth, position.y - bodyHeight},
         {bodyHalfWidth * 2.f, bodyHeight});
-    for (const sf::FloatRect& area : collisionAreas)
+    for (const sf::FloatRect& area : movementCollisionAreas)
     {
         if (area.findIntersection(body))
         {
@@ -449,17 +556,28 @@ bool Level1::collidesAt(const sf::Vector2f& position) const
     return false;
 }
 
-void Level1::resolveMovement(Entity& entity, const sf::Vector2f& previousPosition)
+void Level1::resolveMovement(
+    Entity& entity,
+    const sf::Vector2f& previousPosition,
+    const std::optional<LevelArenaBounds>& activeArenaBounds)
 {
-    const sf::Vector2u windowSize = window->getSize();
-    constexpr float bodyHalfWidth = 28.f;
-    constexpr float bodyHeight = 36.f;
+    constexpr float bodyHalfWidth = GameConfig::Level1::BodyHalfWidth;
+    const float scale = getWorldScale(window);
     const sf::Vector2f target = entity.getPosition();
     sf::Vector2f resolved = previousPosition;
+    float minimumX = worldBounds.position.x + bodyHalfWidth;
+    float maximumX =
+        worldBounds.position.x + worldBounds.size.x - bodyHalfWidth;
+    if (activeArenaBounds.has_value())
+    {
+        minimumX = std::max(minimumX, activeArenaBounds->minimumX);
+        maximumX = std::min(maximumX, activeArenaBounds->maximumX);
+    }
+    const float minimumY = GameConfig::Level1::WalkableMinimumMapY * scale;
+    const float maximumY = GameConfig::Level1::WalkableMaximumMapY * scale;
 
     sf::Vector2f candidate(
-        std::clamp(target.x, bodyHalfWidth,
-                   static_cast<float>(windowSize.x) - bodyHalfWidth),
+        std::clamp(target.x, minimumX, maximumX),
         resolved.y);
     if (!collidesAt(candidate))
     {
@@ -468,7 +586,7 @@ void Level1::resolveMovement(Entity& entity, const sf::Vector2f& previousPositio
 
     candidate = {
         resolved.x,
-        std::clamp(target.y, bodyHeight, static_cast<float>(windowSize.y))
+        std::clamp(target.y, minimumY, maximumY)
     };
     if (!collidesAt(candidate))
     {

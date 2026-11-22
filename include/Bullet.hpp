@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.hpp"
+#include "GameConfig.hpp"
 #include <array.hpp>
 
 class Bullet
@@ -11,7 +12,7 @@ public:
         float horizontalDirection,
         float speed,
         int damage,
-        sf::Color color = sf::Color(235, 75, 55));
+        sf::Color color = GameConfig::Bullet::DefaultColor);
 
     bool update(
         float deltaTime,
@@ -26,8 +27,8 @@ public:
     void draw(sf::RenderWindow& window) const;
 
 private:
-    sf::CircleShape shape{12.f};
+    sf::CircleShape shape{GameConfig::Bullet::Radius};
     float horizontalSpeed;
-    float lifetime = 3.f;
+    float lifetime = GameConfig::Bullet::Lifetime;
     int damage;
 };

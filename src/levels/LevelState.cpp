@@ -46,7 +46,7 @@ LevelState::LevelState(
 
 void LevelState::update(float deltaTime)
 {
-    updateLevel(deltaTime, isPlayerMovementBlocked());
+    updateLevel(deltaTime, getActiveArenaBounds());
     processEncounterTriggers();
     updateCamera(deltaTime);
 }
@@ -101,18 +101,18 @@ bool LevelState::completeLevelProgress()
     return true;
 }
 
-bool LevelState::isPlayerMovementBlocked() const
+std::optional<LevelArenaBounds> LevelState::getActiveArenaBounds() const
 {
-    for (int index = 0; index < static_cast<int>(encounters.size()); ++index)
+    for (std::size_t index = 0; index < encounters.size(); ++index)
     {
-        if (encounters[index].type == LevelEncounter::Type::Wave &&
-            encounterStatuses[index] == EncounterStatus::Active)
+        if (encounterStatuses[index] == EncounterStatus::Active &&
+            encounters[index].arenaBounds.has_value())
         {
-            return true;
+            return encounters[index].arenaBounds;
         }
     }
 
-    return false;
+    return std::nullopt;
 }
 
 const sf::View& LevelState::getCameraView() const
@@ -138,6 +138,18 @@ void LevelState::processEncounterTriggers()
 bool LevelState::canActivateEncounter(int encounterIndex) const
 {
     const LevelEncounter& encounter = encounters[encounterIndex];
+    if (encounter.type == LevelEncounter::Type::Wave)
+    {
+        for (std::size_t index = 0; index < encounterStatuses.size(); ++index)
+        {
+            if (encounterStatuses[index] == EncounterStatus::Active &&
+                encounters[index].type == LevelEncounter::Type::Wave)
+            {
+                return false;
+            }
+        }
+    }
+
     if (encounter.trigger == LevelEncounter::Trigger::AtPosition)
     {
         return getPlayerPosition().x >= encounter.triggerX;
