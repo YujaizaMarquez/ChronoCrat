@@ -30,9 +30,43 @@ void Game::popState() {
 
 void Game::returnToMainMenu()
 {
-    states.clear();
-    hasActiveEra = false;
-    pushState(std::make_unique<Menu>(window.get(), this));
+    pendingTransition = [this]()
+    {
+        states.clear();
+        hasActiveEra = false;
+        pushState(std::make_unique<Menu>(window.get(), this));
+    };
+}
+
+void Game::retryCurrentLevel()
+{
+    pendingTransition = [this]()
+    {
+        // Quitar LevelResultState y el nivel actual
+        popState();
+        popState();
+        hasActiveEra = false;
+        startLevel(lastPlayedEra, lastPlayedLevelNumber);
+    };
+}
+
+void Game::startNextLevel()
+{
+    pendingTransition = [this]()
+    {
+        // Quitar LevelResultState y el nivel completado (queda LevelSelectionMenu debajo)
+        popState();
+        popState();
+        hasActiveEra = false;
+
+        const auto* nextLevel = levelTree.get_next_level(lastPlayedEra);
+        if (nextLevel != nullptr)
+        {
+            startLevel(lastPlayedEra, nextLevel->get_key().number);
+        }
+        // Si el siguiente nivel aún no existe en startLevel() o ya toca minijefe,
+        // se queda en LevelSelectionMenu mostrando el nuevo nodo desbloqueado.
+    };
 }
 
 bool Game::startNewGame()
@@ -78,6 +112,22 @@ bool Game::startLevel(LevelEra era, int number)
 
     if (era == LevelEra::Present && number == 1)
     {
+        pushState(std::make_unique<Level2>(window.get(), this));
+        return true;
+    }
+
+    if (era == LevelEra::Past && number == 1)
+    {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
+        pushState(std::make_unique<Level1>(window.get(), this));
+        return true;
+    }
+
+    if (era == LevelEra::Present && number == 1)
+    {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
         pushState(std::make_unique<Level2>(window.get(), this));
         return true;
     }
@@ -206,5 +256,11 @@ void Game::run()
         }
 
         window->display();
+        if (pendingTransition)
+        {
+            auto action = std::move(pendingTransition);
+            pendingTransition = nullptr;
+            action();
+        }
     }
 }
