@@ -134,7 +134,7 @@ Level1::Level1(sf::RenderWindow* window, Game* game)
     worldWeapons.append(std::move(secondWorldWeapon));
 }
 
-const Player& Level1::getPlayer() const
+Player& Level1::getPlayer()
 {
     return player;
 }
@@ -148,11 +148,6 @@ void Level1::handleLevelEvent(sf::Event& event)
 {
     const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
     if (keyPressed == nullptr)
-    {
-        return;
-    }
-
-    if (player.selectInventorySlotFromKey(keyPressed->code))
     {
         return;
     }

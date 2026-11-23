@@ -29,9 +29,9 @@ los límites de las tres arenas, las cantidades de soldados y los obstáculos
 se configuran en `GameConfig::Level1`. Los datos presentes en los archivos JSON
 siguen teniendo prioridad para las entidades que los cargan.
 
-## Controles de inventario del Nivel 1
+## Controles de inventario
 
-- En el Nivel 1, usa las teclas `1`–`5` (también el teclado numérico) para
+- Usa las teclas `1`–`5` (también el teclado numérico) para
   seleccionar un espacio del inventario mostrado en el HUD.
 - Si el espacio seleccionado está vacío, el jugador no sostiene ningún objeto.
 - Si contiene un arma, esta se equipa y se muestra en la mano del jugador.

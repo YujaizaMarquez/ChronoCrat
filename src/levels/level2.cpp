@@ -237,6 +237,11 @@ void Level2::drawAnimatedObjects()
 
 
 
+Player& Level2::getPlayer()
+{
+    return player;
+}
+
 sf::Vector2f Level2::getPlayerPosition() const
 {
     return player.getPosition();

@@ -60,12 +60,19 @@ void LevelState::update(float deltaTime)
 void LevelState::handleEvent(sf::Event& event)
 {
     const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-    if (keyPressed != nullptr &&
-        keyPressed->code == sf::Keyboard::Key::Escape)
+    if (keyPressed != nullptr)
     {
-        game->pushState(
-            std::make_unique<OptionsState>(window, game, *this));
-        return;
+        if (keyPressed->code == sf::Keyboard::Key::Escape)
+        {
+            game->pushState(
+                std::make_unique<OptionsState>(window, game, *this));
+            return;
+        }
+
+        if (getPlayer().selectInventorySlotFromKey(keyPressed->code))
+        {
+            return;
+        }
     }
 
     handleLevelEvent(event);

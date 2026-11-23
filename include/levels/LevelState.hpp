@@ -64,7 +64,7 @@ public:
     void draw() final;
 
 protected:
-    virtual const Player& getPlayer() const = 0;
+    virtual Player& getPlayer() = 0;
     virtual sf::Vector2f getPlayerPosition() const = 0;
     virtual void handleLevelEvent(sf::Event& event) = 0;
     virtual void updateLevel(
