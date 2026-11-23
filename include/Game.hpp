@@ -19,6 +19,7 @@ class Game
     
     void pushState(std::unique_ptr<State> state);
     void popState();
+    void returnToMainMenu();
     bool startNewGame();
     bool startLevel(LevelEra era, int number);
     bool startMiniBoss(LevelEra era);

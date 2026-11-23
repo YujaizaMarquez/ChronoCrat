@@ -1,5 +1,6 @@
 #include "levels/LevelState.hpp"
 #include "Game.hpp"
+#include "States/OptionsState.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -56,6 +57,15 @@ void LevelState::update(float deltaTime)
 
 void LevelState::handleEvent(sf::Event& event)
 {
+    const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+    if (keyPressed != nullptr &&
+        keyPressed->code == sf::Keyboard::Key::Escape)
+    {
+        game->pushState(
+            std::make_unique<OptionsState>(window, game, *this));
+        return;
+    }
+
     handleLevelEvent(event);
 }
 

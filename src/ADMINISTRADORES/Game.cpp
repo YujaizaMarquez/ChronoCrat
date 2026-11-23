@@ -28,6 +28,13 @@ void Game::popState() {
     }
 }
 
+void Game::returnToMainMenu()
+{
+    states.clear();
+    hasActiveEra = false;
+    pushState(std::make_unique<Menu>(window.get(), this));
+}
+
 bool Game::startNewGame()
 {
     if (hasActiveEra)
