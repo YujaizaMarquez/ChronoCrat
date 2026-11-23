@@ -222,10 +222,6 @@ void Menu::handleEvent(sf::Event& event)
             {
                 game->continueGame();
             }
-            else if (selected == 2)
-            {
-                window->close();
-            }
         }
     }
 }
