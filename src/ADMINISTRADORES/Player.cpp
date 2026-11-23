@@ -137,16 +137,70 @@ bool Player::addItem(std::unique_ptr<Item>&& item)
         return false;
     }
 
-    Item* addedItem = item.get();
     if (!inventory.addItem(std::move(item)))
     {
         return false;
     }
-    if (addedItem->getType() == ItemType::Weapon)
-    {
-        addedItem->use();
-    }
+
+    updateEquippedInventoryItem();
     return true;
+}
+
+bool Player::selectInventorySlotFromKey(sf::Keyboard::Key key)
+{
+    switch (key)
+    {
+    case sf::Keyboard::Key::Num1:
+    case sf::Keyboard::Key::Numpad1:
+        selectInventorySlot(0);
+        return true;
+    case sf::Keyboard::Key::Num2:
+    case sf::Keyboard::Key::Numpad2:
+        selectInventorySlot(1);
+        return true;
+    case sf::Keyboard::Key::Num3:
+    case sf::Keyboard::Key::Numpad3:
+        selectInventorySlot(2);
+        return true;
+    case sf::Keyboard::Key::Num4:
+    case sf::Keyboard::Key::Numpad4:
+        selectInventorySlot(3);
+        return true;
+    case sf::Keyboard::Key::Num5:
+    case sf::Keyboard::Key::Numpad5:
+        selectInventorySlot(4);
+        return true;
+    default:
+        return false;
+    }
+}
+
+void Player::selectInventorySlot(std::size_t index)
+{
+    if (index >= inventory.capacity())
+    {
+        return;
+    }
+
+    selectedInventorySlot = index;
+    updateEquippedInventoryItem();
+}
+
+std::size_t Player::getSelectedInventorySlot() const
+{
+    return selectedInventorySlot;
+}
+
+void Player::updateEquippedInventoryItem()
+{
+    for (std::size_t index = 0; index < inventory.capacity(); ++index)
+    {
+        Weapon* weapon = dynamic_cast<Weapon*>(inventory.get(index));
+        if (weapon != nullptr)
+        {
+            weapon->setEquipped(index == selectedInventorySlot);
+        }
+    }
 }
 
 void Player::addItem(const std::string& item)
@@ -174,6 +228,7 @@ bool Player::hasItem(const std::string& item) const
 void Player::clearInventory()
 {
     inventory.clear();
+    selectedInventorySlot = 0;
     savedInventoryIds.clear();
 }
 
@@ -189,36 +244,16 @@ const Inventory& Player::getInventory() const
 
 Weapon* Player::getEquippedWeapon()
 {
-    for (std::size_t index = 0; index < inventory.capacity(); ++index)
-    {
-        Item* item = inventory.get(index);
-        if (item != nullptr && item->getType() == ItemType::Weapon)
-        {
-            Weapon* weapon = dynamic_cast<Weapon*>(item);
-            if (weapon != nullptr && weapon->isEquipped())
-            {
-                return weapon;
-            }
-        }
-    }
-    return nullptr;
+    Weapon* weapon =
+        dynamic_cast<Weapon*>(inventory.get(selectedInventorySlot));
+    return weapon != nullptr && weapon->isEquipped() ? weapon : nullptr;
 }
 
 const Weapon* Player::getEquippedWeapon() const
 {
-    for (std::size_t index = 0; index < inventory.capacity(); ++index)
-    {
-        const Item* item = inventory.get(index);
-        if (item != nullptr && item->getType() == ItemType::Weapon)
-        {
-            const Weapon* weapon = dynamic_cast<const Weapon*>(item);
-            if (weapon != nullptr && weapon->isEquipped())
-            {
-                return weapon;
-            }
-        }
-    }
-    return nullptr;
+    const Weapon* weapon =
+        dynamic_cast<const Weapon*>(inventory.get(selectedInventorySlot));
+    return weapon != nullptr && weapon->isEquipped() ? weapon : nullptr;
 }
 
 const Designar::DynArray<std::string>& Player::getSavedInventoryIds() const
@@ -274,6 +309,7 @@ void Player::importSaveData(const SaveData& data)
     exp = data.exp;
 
     inventory.clear();
+    selectedInventorySlot = 0;
     savedInventoryIds.clear();
     for (size_t i = 0; i < data.inventory.size(); ++i) {
         savedInventoryIds.append(data.inventory[i]);

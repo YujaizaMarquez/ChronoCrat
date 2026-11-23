@@ -28,6 +28,11 @@ bool Weapon::isEquipped() const
     return equipped;
 }
 
+void Weapon::setEquipped(bool isEquipped)
+{
+    equipped = isEquipped;
+}
+
 void Weapon::updateFireCooldown(float deltaTime)
 {
     fireCooldownRemaining =

@@ -14,6 +14,7 @@ public:
     Level2(sf::RenderWindow* window, Game* game);
 
 protected:
+    const Player& getPlayer() const override;
     sf::Vector2f getPlayerPosition() const override;
     void handleLevelEvent(sf::Event& event) override;
     void updateLevel(

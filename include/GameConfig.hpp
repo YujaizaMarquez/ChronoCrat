@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <SFML/Graphics/Color.hpp>
 
@@ -73,6 +74,18 @@ namespace Inventory
 inline constexpr std::size_t Capacity = 5;
 }
 
+namespace InventoryHud
+{
+inline constexpr float SlotSize = 76.f;
+inline constexpr float SlotGap = 10.f;
+inline constexpr float BottomMargin = 24.f;
+inline constexpr float DigitThickness = 2.5f;
+inline const sf::Color SelectedBackground(68, 61, 43, 235);
+inline const sf::Color SlotBackground(20, 24, 30, 220);
+inline const sf::Color SelectedOutline(255, 205, 85);
+inline const sf::Color SlotOutline(155, 165, 175);
+}
+
 namespace Item
 {
 inline constexpr float PickupRadius = 48.f;
@@ -140,11 +153,11 @@ struct ArenaLayout
     std::size_t soldierCount;
 };
 
-inline constexpr char BackgroundPath[] = "assets/era1/guerra/guerra2_2.jpeg";
-inline constexpr float MapImageWidth = 4320.f;
-inline constexpr float MapImageHeight = 516.f;
+inline constexpr char BackgroundPath[] = "assets/era1/guerra/jjj.png";
+inline constexpr float MapImageWidth = 6400.f;
+inline constexpr float MapImageHeight = 704.f;
 inline constexpr float PlayerStartMapX = 150.f;
-inline constexpr float PlayerStartMapY = 450.f;
+inline constexpr float PlayerStartMapY = 500.f;
 inline constexpr float PlayerVisualScale = 2.5f;
 inline constexpr float EnemyVisualScale = 2.5f;
 inline constexpr int PlayerAttackDamage = 35;
@@ -152,36 +165,28 @@ inline constexpr float PlayerAttackRange = 130.f;
 inline constexpr float PlayerAttackCooldown = 0.45f;
 inline constexpr float WeaponSpawnOffsetX = 60.f;
 inline constexpr float WeaponSpawnOffsetY = -8.f;
+inline constexpr float SecondWeaponSpawnMapX = 1700.f;
+inline constexpr float SecondWeaponSpawnMapY = 520.f;
 inline constexpr float WeaponPickupRadius = 80.f;
 inline constexpr float EquippedWeaponFacingOffset = 18.f;
 inline constexpr float EquippedWeaponHeightOffset = -58.f;
 
 inline constexpr float WalkableMinimumMapY = 400.f;
-inline constexpr float WalkableMaximumMapY = 495.f;
-inline constexpr float EnemyMinimumSpawnMapY = 435.f;
-inline constexpr float EnemyMaximumSpawnMapY = 465.f;
+inline constexpr float WalkableMaximumMapY = 680.f;
+inline constexpr float EnemyMinimumSpawnMapY = 510.f;
+inline constexpr float EnemyMaximumSpawnMapY = 550.f;
 inline constexpr float EnemyEntryOffsetMapX = 120.f;
 inline constexpr float EnemyEntryArrivalDistance = 8.f;
 inline constexpr ArenaLayout FirstArena{300.f, 1650.f, 450.f, 900.f, 5};
 inline constexpr ArenaLayout SecondArena{1800.f, 2950.f, 2270.f, 2450.f, 5};
 inline constexpr ArenaLayout ThirdArena{3100.f, 4250.f, 3150.f, 3550.f, 5};
 
-inline constexpr std::size_t CollisionObstacleCount = 3;
-inline constexpr CollisionObstacle WestRubble{
-    {1050.f, 455.f, 180.f, 40.f},
+inline constexpr CollisionObstacle BuildingFrontBoundary{
+    {0.f, 460.f, MapImageWidth, 4.f},
     true,
-    true
+    false
 };
-inline constexpr CollisionObstacle TankCover{
-    {1370.f, 290.f, 360.f, 110.f},
-    false,
-    true
-};
-inline constexpr CollisionObstacle BridgeApproachRubble{
-    {2880.f, 455.f, 170.f, 40.f},
-    true,
-    true
-};
+inline constexpr std::array CollisionObstacles{BuildingFrontBoundary};
 
 inline constexpr float BodyHalfWidth = 28.f;
 inline constexpr float BodyHeight = 36.f;

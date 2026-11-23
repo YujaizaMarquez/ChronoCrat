@@ -119,11 +119,24 @@ Level1::Level1(sf::RenderWindow* window, Game* game)
         GameConfig::Level1::PlayerAttackRange,
         GameConfig::Level1::PlayerAttackCooldown);
 
-    worldWeapon = std::make_unique<Weapon>();
-    worldWeapon->setPosition({
+    std::unique_ptr<Item> firstWorldWeapon = std::make_unique<Weapon>();
+    firstWorldWeapon->setPosition({
         player.getPosition().x + GameConfig::Level1::WeaponSpawnOffsetX,
         player.getPosition().y + GameConfig::Level1::WeaponSpawnOffsetY
     });
+    worldWeapons.append(std::move(firstWorldWeapon));
+
+    std::unique_ptr<Item> secondWorldWeapon = std::make_unique<Weapon>();
+    secondWorldWeapon->setPosition({
+        GameConfig::Level1::SecondWeaponSpawnMapX * scale,
+        GameConfig::Level1::SecondWeaponSpawnMapY * scale
+    });
+    worldWeapons.append(std::move(secondWorldWeapon));
+}
+
+const Player& Level1::getPlayer() const
+{
+    return player;
 }
 
 sf::Vector2f Level1::getPlayerPosition() const
@@ -134,17 +147,29 @@ sf::Vector2f Level1::getPlayerPosition() const
 void Level1::handleLevelEvent(sf::Event& event)
 {
     const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-    if (keyPressed == nullptr ||
-        keyPressed->code != sf::Keyboard::Key::E ||
-        worldWeapon == nullptr ||
+    if (keyPressed == nullptr)
+    {
+        return;
+    }
+
+    if (player.selectInventorySlotFromKey(keyPressed->code))
+    {
+        return;
+    }
+
+    if (keyPressed->code != sf::Keyboard::Key::E ||
+        worldWeapons.is_empty() ||
         !player.getInventory().hasSpace() ||
         playerDefeated)
     {
         return;
     }
 
-    worldWeapon->tryPickup(
-        player.getPosition(), GameConfig::Level1::WeaponPickupRadius);
+    for (std::size_t index = 0; index < worldWeapons.size(); ++index)
+    {
+        worldWeapons[index]->tryPickup(
+            player.getPosition(), GameConfig::Level1::WeaponPickupRadius);
+    }
 }
 
 void Level1::updateLevel(
@@ -238,9 +263,9 @@ void Level1::updateLevel(
 
 void Level1::drawWorld()
 {
-    if (worldWeapon != nullptr)
+    for (std::size_t index = 0; index < worldWeapons.size(); ++index)
     {
-        worldWeapon->draw(*window);
+        worldWeapons[index]->draw(*window);
     }
 
     player.draw(*window);
@@ -316,16 +341,23 @@ void Level1::drawHud()
 
 void Level1::updateWorldWeapon(float deltaTime)
 {
-    if (worldWeapon == nullptr)
+    for (std::size_t index = 0; index < worldWeapons.size();)
     {
-        return;
-    }
-
-    worldWeapon->update(deltaTime, player.getPosition());
-    if (worldWeapon->isCollected() &&
-        !player.addItem(std::move(worldWeapon)))
-    {
-        throw std::logic_error("No se pudo transferir la MP40 al inventario");
+        std::unique_ptr<Item>& worldWeapon = worldWeapons[index];
+        worldWeapon->update(deltaTime, player.getPosition());
+        if (worldWeapon->isCollected())
+        {
+            if (!player.addItem(std::move(worldWeapon)))
+            {
+                throw std::logic_error(
+                    "No se pudo transferir el arma al inventario");
+            }
+            worldWeapons.remove_pos_closing_breach(index);
+        }
+        else
+        {
+            ++index;
+        }
     }
 }
 
@@ -553,9 +585,9 @@ void Level1::initializeCollisionAreas()
     movementCollisionAreas.clear();
     projectileCollisionAreas.clear();
     movementCollisionAreas.reserve(
-        GameConfig::Level1::CollisionObstacleCount);
+        GameConfig::Level1::CollisionObstacles.size());
     projectileCollisionAreas.reserve(
-        GameConfig::Level1::CollisionObstacleCount);
+        GameConfig::Level1::CollisionObstacles.size());
 
     const auto appendObstacle = [&](const GameConfig::CollisionObstacle& obstacle)
     {
@@ -572,9 +604,11 @@ void Level1::initializeCollisionAreas()
             projectileCollisionAreas.append(area);
         }
     };
-    appendObstacle(GameConfig::Level1::WestRubble);
-    appendObstacle(GameConfig::Level1::TankCover);
-    appendObstacle(GameConfig::Level1::BridgeApproachRubble);
+    for (const GameConfig::CollisionObstacle& obstacle :
+         GameConfig::Level1::CollisionObstacles)
+    {
+        appendObstacle(obstacle);
+    }
 }
 
 bool Level1::collidesAt(const sf::Vector2f& position) const

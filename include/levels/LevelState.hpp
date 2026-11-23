@@ -46,6 +46,8 @@ struct LevelWorldBounds
     sf::Vector2f maximum;
 };
 
+class Player;
+
 class LevelState : public State
 {
 public:
@@ -62,6 +64,7 @@ public:
     void draw() final;
 
 protected:
+    virtual const Player& getPlayer() const = 0;
     virtual sf::Vector2f getPlayerPosition() const = 0;
     virtual void handleLevelEvent(sf::Event& event) = 0;
     virtual void updateLevel(

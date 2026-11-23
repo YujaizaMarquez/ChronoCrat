@@ -1,6 +1,8 @@
 #include "levels/LevelState.hpp"
 #include "Game.hpp"
 #include "States/OptionsState.hpp"
+#include "Player.hpp"
+#include "item/InventoryHud.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -76,6 +78,11 @@ void LevelState::draw()
     drawWorld();
     window->setView(window->getDefaultView());
     drawHud();
+    const Player& player = getPlayer();
+    drawInventoryHud(
+        *window,
+        player.getInventory(),
+        player.getSelectedInventorySlot());
 }
 
 void LevelState::completeEncounter(int encounterIndex)

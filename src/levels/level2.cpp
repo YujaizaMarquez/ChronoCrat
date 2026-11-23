@@ -88,6 +88,11 @@ Level2::Level2(sf::RenderWindow* window, Game* game)
     player.setCombatStats(35, 130.f, 0.45f);
 }
 
+const Player& Level2::getPlayer() const
+{
+    return player;
+}
+
 sf::Vector2f Level2::getPlayerPosition() const
 {
     return player.getPosition();

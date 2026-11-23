@@ -14,6 +14,7 @@ public:
     Level1(sf::RenderWindow* window, Game* game);
 
 protected:
+    const Player& getPlayer() const override;
     sf::Vector2f getPlayerPosition() const override;
     void handleLevelEvent(sf::Event& event) override;
     void updateLevel(
@@ -35,10 +36,10 @@ private:
     EnemyFactory enemyFactory;
     Designar::DynArray<std::unique_ptr<Enemy>> enemies;
     Designar::DynArray<EnemyEntrance> enteringEnemies;
+    Designar::DynArray<std::unique_ptr<Item>> worldWeapons;
     Designar::DynArray<sf::FloatRect> movementCollisionAreas;
     Designar::DynArray<sf::FloatRect> projectileCollisionAreas;
     Designar::DynArray<Bullet> playerBullets;
-    std::unique_ptr<Item> worldWeapon;
     sf::FloatRect worldBounds;
     int activeEncounterIndex = -1;
     bool levelCompleted = false;
