@@ -1,125 +1,306 @@
 
 #include "levels/Level2.hpp"
+#include "GameConfig.hpp"
 #include "Soldier.hpp"
+#include "item/Weapon.hpp"
+
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <utility>
 
 namespace
 {
 
-// El escenario tendrá tres pantallas de ancho.
-LevelWorldBounds getLevel2WorldBounds(const sf::RenderWindow* window)
+float getWorldScale(const sf::RenderWindow* window)
 {
-    const sf::Vector2u windowSize = window->getSize();
+    return static_cast<float>(window->getSize().y) /
+           GameConfig::Level2::MapImageHeight;
+}
 
-    const float worldWidth =
-        static_cast<float>(windowSize.x) * 3.f;
+// Convierte los limites Y del mapa a coordenadas del mundo.
+// Los valores 740 y 1080 son coordenadas originales del mapa.
+float getMinWalkableY(const sf::RenderWindow* window)
+{
+    return Level2::MinWalkableY * getWorldScale(window);
+}
 
-    const float worldHeight =
-        static_cast<float>(windowSize.y);
+float getMaxWalkableY(const sf::RenderWindow* window)
+{
+    return Level2::MaxWalkableY * getWorldScale(window);
+}
+
+LevelWorldBounds getWorldBounds(const sf::RenderWindow* window)
+{
+    const float scale = getWorldScale(window);
 
     return {
         {0.f, 0.f},
-        {worldWidth, worldHeight}
+        {
+            GameConfig::Level2::MapImageWidth * scale,
+            GameConfig::Level2::MapImageHeight * scale
+        }
     };
 }
 
-// Enemigos del nivel 2.
 Designar::DynArray<LevelEncounter> createLevel2Encounters(
     const sf::RenderWindow* window)
 {
-    const sf::Vector2u windowSize = window->getSize();
+    const float scale = getWorldScale(window);
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
 
-    const float worldWidth =
-        static_cast<float>(windowSize.x) * 3.f;
+    Designar::DynArray<LevelEncounter> encounters;
 
-    LevelEncounter encounter{
+    LevelEncounter wave1{
         LevelEncounter::Type::Wave,
         LevelEncounter::Trigger::AtPosition,
-        static_cast<float>(windowSize.x) * 1.2f,
+        GameConfig::Level2::FirstWaveTriggerX * scale,
         Designar::DynArray<LevelEnemySpawn>()
     };
 
-    encounter.enemies.append({
+    wave1.arenaBounds = LevelArenaBounds{
+        GameConfig::Level2::FirstWaveMinX * scale,
+        GameConfig::Level2::FirstWaveMaxX * scale
+    };
+
+    wave1.enemies.append(LevelEnemySpawn{
         "cientifico1",
-        {worldWidth * 0.55f, static_cast<float>(windowSize.y) * 0.82f}
+        sf::Vector2f{
+            GameConfig::Level2::FirstWaveSpawnX * scale,
+            std::clamp(
+                GameConfig::Level2::FirstWaveSpawnY * scale,
+                minY,
+                maxY
+            )
+        }
     });
 
-    encounter.enemies.append({
-        "cientifico1",
-        {worldWidth * 0.65f, static_cast<float>(windowSize.y) * 0.82f}
-    });
-
-    Designar::DynArray<LevelEncounter> encounters;
-    encounters.append(std::move(encounter));
+    encounters.append(std::move(wave1));
 
     return encounters;
 }
 
-}
+} // namespace
+
 
 Level2::Level2(sf::RenderWindow* window, Game* game)
     : LevelState(
-        window,
-        game,
-        "assets/fondo_pandemia_dia.png",
-        createLevel2Encounters(window),
-        getLevel2WorldBounds(window))
+          window,
+          game,
+          GameConfig::Level2::BackgroundPath,
+          createLevel2Encounters(window),
+          getWorldBounds(window))
 {
-    const sf::Vector2u windowSize = window->getSize();
-
-    const float worldWidth =
-        static_cast<float>(windowSize.x) * 3.f;
+    const LevelWorldBounds bounds = getWorldBounds(window);
 
     worldBounds = sf::FloatRect(
-        {0.f, 0.f},
-        {
-            worldWidth,
-            static_cast<float>(windowSize.y)
-        });
+        bounds.minimum,
+        bounds.maximum - bounds.minimum
+    );
 
-    player.setPosition({
-        static_cast<float>(windowSize.x) * 0.15f,
-        static_cast<float>(windowSize.y) * 0.82f
+    initializeCollisionAreas();
+    initializeAnimatedObjects();
+
+    const float scale = getWorldScale(window);
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
+
+    // Posicion inicial del jugador.
+    const sf::Vector2f startPos{
+        GameConfig::Level2::PlayerStartMapX * scale,
+        std::clamp(
+            GameConfig::Level2::PlayerStartMapY * scale,
+            minY,
+            maxY
+        )
+    };
+
+    player.setPosition(startPos);
+
+    player.setVisualScale(
+        GameConfig::Level2::PlayerVisualScale
+    );
+
+    player.setCombatStats(
+        GameConfig::Level2::PlayerAttackDamage,
+        GameConfig::Level2::PlayerAttackRange,
+        GameConfig::Level2::PlayerAttackCooldown
+    );
+
+    // Cargar el cientifico que el jugador puede rescatar.
+    cientifico1Loaded = cientifico1.loadFromJson(
+        "data/cientifico1.json"
+    );
+
+    if (!cientifico1Loaded)
+    {
+        throw std::runtime_error(
+            "No se pudo cargar cientifico1 desde JSON"
+        );
+    }
+
+    cientifico1.setVisualScale(1.f);
+
+    cientifico1.setPosition(sf::Vector2f{
+        GameConfig::Level2::Cientifico1StartMapX * scale,
+        std::clamp(
+            GameConfig::Level2::Cientifico1StartMapY * scale,
+            minY,
+            maxY
+        )
     });
 
-    player.setVisualScale(2.5f);
-    player.setCombatStats(35, 130.f, 0.45f);
+    cientifico1.playAnimation("idle");
 }
 
-const Player& Level2::getPlayer() const
+
+void Level2::initializeAnimatedObjects()
 {
-    return player;
+    const float scale = getWorldScale(window);
+
+    if (!tapabocasTexture.loadFromFile(
+            "assets/level_pandemia/tapabocas_girando.png"))
+    {
+        throw std::runtime_error(
+            "No se pudo cargar tapabocas_girando.png");
+    }
+
+    if (!tuboVirusTexture.loadFromFile(
+            "assets/level_pandemia/tubo_virus_transparente.png"))
+    {
+        throw std::runtime_error(
+            "No se pudo cargar tubo_virus_transparente.png");
+    }
+
+    tapabocasTexture.setSmooth(false);
+    tuboVirusTexture.setSmooth(false);
+
+    tapabocasSprite.emplace(tapabocasTexture);
+    tuboVirusSprite.emplace(tuboVirusTexture);
+
+    // Tapabocas: 5 frames de 20x100
+tapabocasSprite->setTextureRect(
+    sf::IntRect({0, 0}, {20, 100})
+);
+
+// Tubo: 5 frames de 64x320
+tuboVirusSprite->setTextureRect(
+    sf::IntRect({0, 0}, {64, 320})
+);
+
+    tapabocasSprite->setPosition(
+        sf::Vector2f(1038.f * scale, 866.f * scale));
+
+    tuboVirusSprite->setPosition(
+        sf::Vector2f(1190.f * scale, 800.f * scale));
+
+    tapabocasSprite->setScale({3.f, 3.f});
+tuboVirusSprite->setScale({3.f, 3.f});
 }
+
+
+void Level2::updateAnimatedObjects(float deltaTime)
+{
+    tapabocasAnimationTimer += deltaTime;
+    tuboVirusAnimationTimer += deltaTime;
+
+    if (tapabocasAnimationTimer >= ObjectAnimationSpeed)
+    {
+        tapabocasAnimationTimer = 0.f;
+        tapabocasFrame = (tapabocasFrame + 1) % TotalObjectFrames;
+
+        tapabocasSprite->setTextureRect(
+    sf::IntRect({tapabocasFrame * 20, 0}, {20, 100})
+);
+    }
+
+    if (tuboVirusAnimationTimer >= ObjectAnimationSpeed)
+    {
+        tuboVirusAnimationTimer = 0.f;
+        tuboVirusFrame = (tuboVirusFrame + 1) % TotalObjectFrames;
+
+        tuboVirusSprite->setTextureRect(
+    sf::IntRect({tuboVirusFrame * 64, 0}, {64, 320})
+);
+    }
+}
+
+void Level2::drawAnimatedObjects()
+{
+    if (tapabocasSprite.has_value())
+        window->draw(*tapabocasSprite);
+
+    if (tuboVirusSprite.has_value())
+        window->draw(*tuboVirusSprite);
+}
+
+
 
 sf::Vector2f Level2::getPlayerPosition() const
 {
     return player.getPosition();
 }
 
+
 void Level2::handleLevelEvent(sf::Event& event)
 {
-    // Aquí se pueden agregar los eventos del nivel 2.
+    const auto* keyPressed =
+        event.getIf<sf::Event::KeyPressed>();
+
+    if (keyPressed == nullptr || playerDefeated)
+    {
+        return;
+    }
+
+    if (keyPressed->code == sf::Keyboard::Key::E &&
+        cientifico1Loaded)
+    {
+        const sf::Vector2f diff =
+            cientifico1.getPosition() - player.getPosition();
+
+        const float dist = std::sqrt(
+            diff.x * diff.x + diff.y * diff.y
+        );
+
+        if (dist <= GameConfig::Level2::Cientifico1InteractRadius)
+        {
+            cientifico1RescuedOrReached = true;
+        }
+    }
 }
+
 
 void Level2::updateLevel(
     float deltaTime,
-    bool playerMovementBlocked,
-    std::optional<LevelArenaBounds>)
+    bool,
+    std::optional<LevelArenaBounds> activeArenaBounds)
 {
+    updateAnimatedObjects(deltaTime);
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
+
+    // Actualizar jugador y resolver sus colisiones.
     const sf::Vector2f previousPlayerPosition =
         player.getPosition();
 
-    player.update(deltaTime, !playerDefeated && !playerMovementBlocked);
+    player.update(deltaTime, !playerDefeated);
 
-    resolveMovement(player, previousPlayerPosition);
+    resolveMovement(
+        player,
+        previousPlayerPosition,
+        std::nullopt
+    );
 
     if (player.isDead())
     {
         playerDefeated = true;
     }
 
+    updateCientifico1(deltaTime);
+    updatePlayerWeapon(deltaTime);
+
+    // Actualizar enemigos.
     for (std::size_t index = 0; index < enemies.size();)
     {
         Enemy& enemy = *enemies[index];
@@ -127,9 +308,95 @@ void Level2::updateLevel(
         const sf::Vector2f previousPosition =
             enemy.getPosition();
 
-        enemy.updateAI(deltaTime, player);
+        bool entering = false;
 
-        resolveMovement(enemy, previousPosition);
+        // Comprobar si el enemigo todavia esta entrando al escenario.
+        for (std::size_t entranceIndex = 0;
+             entranceIndex < enteringEnemies.size();
+             ++entranceIndex)
+        {
+            EnteringEnemy& entrance =
+                enteringEnemies[entranceIndex];
+
+            if (entrance.enemy != &enemy)
+            {
+                continue;
+            }
+
+            if (enemy.getHp() <= 0)
+            {
+                enteringEnemies.remove_pos_closing_breach(
+                    entranceIndex
+                );
+
+                break;
+            }
+
+            const sf::Vector2f clampedTarget{
+                entrance.target.x,
+                std::clamp(
+                    entrance.target.y,
+                    minY,
+                    maxY
+                )
+            };
+
+            const sf::Vector2f difference =
+                clampedTarget - enemy.getPosition();
+
+            const float distance = std::sqrt(
+                difference.x * difference.x +
+                difference.y * difference.y
+            );
+
+            if (distance <=
+                GameConfig::Level2::EnemyEntryArrivalDistance)
+            {
+                enemy.setPosition(clampedTarget);
+
+                resolveMovement(
+                    enemy,
+                    previousPosition,
+                    activeArenaBounds
+                );
+
+                enemy.move({0.f, 0.f}, deltaTime);
+
+                enteringEnemies.remove_pos_closing_breach(
+                    entranceIndex
+                );
+            }
+            else
+            {
+                enemy.move(
+                    difference / distance,
+                    deltaTime
+                );
+
+                resolveMovement(
+                    enemy,
+                    previousPosition,
+                    activeArenaBounds
+                );
+
+                enemy.update(deltaTime);
+            }
+
+            entering = true;
+            break;
+        }
+
+        // Cuando termina de entrar, comienza su inteligencia artificial.
+        if (!entering)
+        {
+            enemy.updateAI(deltaTime, player);
+
+            resolveMovement(
+                enemy,
+                previousPosition,
+                activeArenaBounds
+            );
+        }
 
         if (enemy.isDead())
         {
@@ -141,118 +408,439 @@ void Level2::updateLevel(
         }
     }
 
+    updatePlayerBullets(deltaTime);
+
+    // Finalizar encuentro cuando no queden enemigos.
     if (activeEncounterIndex >= 0 && enemies.is_empty())
     {
         completeEncounter(activeEncounterIndex);
         activeEncounterIndex = -1;
+    }
 
-        if (areAllEncountersCompleted() && !levelCompleted)
+    // Completar nivel cuando se hayan terminado los encuentros
+    // y el jugador haya llegado al cientifico.
+    if (areAllEncountersCompleted() &&
+        cientifico1RescuedOrReached)
+    {
+        completeLevelProgress();
+    }
+}
+
+
+void Level2::updateCientifico1(float deltaTime)
+{
+    if (!cientifico1Loaded)
+    {
+        return;
+    }
+
+    const sf::Vector2f previousPos =
+        cientifico1.getPosition();
+
+    if (cientifico1RescuedOrReached)
+    {
+        const sf::Vector2f toPlayer =
+            player.getPosition() - previousPos;
+
+        const float dist = std::sqrt(
+            toPlayer.x * toPlayer.x +
+            toPlayer.y * toPlayer.y
+        );
+
+        if (dist > GameConfig::Level2::Cientifico1FollowDistance)
         {
-            levelCompleted = completeLevelProgress();
+            cientifico1.move(
+                toPlayer / dist,
+                deltaTime
+            );
+
+            cientifico1.playAnimation("walk");
+        }
+        else
+        {
+            cientifico1.playAnimation("idle");
+        }
+    }
+
+    cientifico1.update(deltaTime);
+
+    resolveCientifico1Movement(previousPos);
+}
+
+
+void Level2::drawWorld()
+{
+    drawAnimatedObjects();
+    if (cientifico1Loaded)
+    {
+        cientifico1.draw(*window);
+    }
+
+    player.draw(*window);
+
+    if (Weapon* weapon = player.getEquippedWeapon())
+    {
+        const sf::Vector2f playerPosition =
+            player.getPosition();
+
+        const float facingOffset = player.isFacingRight()
+            ? GameConfig::Level2::EquippedWeaponFacingOffset
+            : -GameConfig::Level2::EquippedWeaponFacingOffset;
+
+        weapon->setPosition(sf::Vector2f{
+            playerPosition.x + facingOffset,
+            playerPosition.y +
+                GameConfig::Level2::EquippedWeaponHeightOffset
+        });
+
+        weapon->getAnimation().setFacingRight(
+            player.isFacingRight()
+        );
+
+        weapon->drawHeld(*window);
+    }
+
+    for (std::size_t index = 0;
+         index < enemies.size();
+         ++index)
+    {
+        enemies[index]->draw(*window);
+    }
+
+    for (const Bullet& bullet : playerBullets)
+    {
+        bullet.draw(*window);
+    }
+}
+
+
+void Level2::drawHud()
+{
+    const sf::Vector2u windowSize =
+        window->getSize();
+
+    const auto drawHealthBar =
+        [this](
+            const sf::Vector2f& position,
+            int hp,
+            int maxHp,
+            const sf::Color& color)
+    {
+        const sf::Vector2f size(
+            GameConfig::Level2::HealthBarWidth,
+            GameConfig::Level2::HealthBarHeight
+        );
+
+        sf::RectangleShape background(size);
+
+        background.setPosition(position);
+
+        background.setFillColor(
+            GameConfig::Level2::HealthBarBackground
+        );
+
+        window->draw(background);
+
+        const float fraction = maxHp > 0
+            ? std::clamp(
+                static_cast<float>(hp) /
+                static_cast<float>(maxHp),
+                0.f,
+                1.f
+            )
+            : 0.f;
+
+        sf::RectangleShape fill(
+            sf::Vector2f{
+                size.x * fraction,
+                size.y
+            }
+        );
+
+        fill.setPosition(position);
+        fill.setFillColor(color);
+
+        window->draw(fill);
+    };
+
+    // Barra de vida del jugador.
+    drawHealthBar(
+        sf::Vector2f{
+            GameConfig::Level2::HealthBarMargin,
+            GameConfig::Level2::HealthBarMargin
+        },
+        player.getHp(),
+        player.getMaxHp(),
+        GameConfig::Level2::PlayerHealthBarColor
+    );
+
+    // Barra de vida del primer enemigo.
+    if (!enemies.is_empty())
+    {
+        drawHealthBar(
+            sf::Vector2f{
+                static_cast<float>(windowSize.x) -
+                    GameConfig::Level2::EnemyHealthBarRightOffset,
+                GameConfig::Level2::HealthBarMargin
+            },
+            enemies[0]->getHp(),
+            enemies[0]->getMaxHp(),
+            GameConfig::Level2::EnemyHealthBarColor
+        );
+    }
+}
+
+
+void Level2::updatePlayerWeapon(float deltaTime)
+{
+    Weapon* weapon = player.getEquippedWeapon();
+
+    if (weapon == nullptr)
+    {
+        return;
+    }
+
+    weapon->updateFireCooldown(deltaTime);
+
+    if (playerDefeated ||
+        !sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+        !weapon->tryFire())
+    {
+        return;
+    }
+
+    const sf::Vector2f playerPosition =
+        player.getPosition();
+
+    const float direction =
+        player.isFacingRight() ? 1.f : -1.f;
+
+    playerBullets.append(Bullet(
+        sf::Vector2f(
+            playerPosition.x +
+                direction *
+                GameConfig::Level2::PlayerBulletSpawnOffsetX,
+
+            playerPosition.y +
+                GameConfig::Level2::PlayerBulletSpawnOffsetY
+        ),
+        direction,
+        GameConfig::Level2::PlayerBulletSpeed,
+        static_cast<int>(weapon->getDamage()),
+        GameConfig::Level2::PlayerBulletColor
+    ));
+}
+
+
+void Level2::updatePlayerBullets(float deltaTime)
+{
+    Designar::DynArray<Entity*> targets;
+
+    targets.reserve(enemies.size());
+
+    for (std::size_t index = 0;
+         index < enemies.size();
+         ++index)
+    {
+        targets.append(enemies[index].get());
+    }
+
+    for (std::size_t index = 0;
+         index < playerBullets.size();)
+    {
+        if (!playerBullets[index].update(
+                deltaTime,
+                targets,
+                projectileCollisionAreas,
+                worldBounds))
+        {
+            playerBullets.remove_pos(index);
+        }
+        else
+        {
+            ++index;
         }
     }
 }
 
-void Level2::drawWorld()
-{
-    player.draw(*window);
-
-    for (std::size_t index = 0; index < enemies.size(); ++index)
-    {
-        enemies[index]->draw(*window);
-    }
-}
-
-void Level2::drawHud()
-{
-    const sf::Vector2u windowSize = window->getSize();
-
-    sf::RectangleShape healthBackground({220.f, 18.f});
-    healthBackground.setPosition({20.f, 20.f});
-    healthBackground.setFillColor(sf::Color(30, 30, 30, 220));
-    window->draw(healthBackground);
-
-    const float healthFraction =
-        player.getMaxHp() > 0
-        ? std::clamp(
-            static_cast<float>(player.getHp()) /
-            static_cast<float>(player.getMaxHp()),
-            0.f,
-            1.f)
-        : 0.f;
-
-    sf::RectangleShape healthFill({
-        220.f * healthFraction,
-        18.f
-    });
-
-    healthFill.setPosition({20.f, 20.f});
-    healthFill.setFillColor(sf::Color(55, 190, 85));
-    window->draw(healthFill);
-}
 
 void Level2::spawnEncounter(
     int encounterIndex,
     const LevelEncounter& encounter)
 {
-    if (activeEncounterIndex >= 0 || !enemies.is_empty())
+    if (activeEncounterIndex >= 0 ||
+        !enemies.is_empty())
     {
         throw std::logic_error(
-            "No se puede iniciar otra oleada mientras haya enemigos activos");
+            "No se puede iniciar otra oleada mientras haya enemigos activos"
+        );
     }
 
     activeEncounterIndex = encounterIndex;
 
-    for (std::size_t index = 0;
-         index < encounter.enemies.size();
-         ++index)
+    const float scale = getWorldScale(window);
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
+
+    for (std::size_t i = 0;
+         i < encounter.enemies.size();
+         ++i)
     {
-        const std::string& enemyType =
-            encounter.enemies[index].enemyType;
+        auto created = enemyFactory.createEnemies(
+            encounter.enemies[i].enemyType,
+            1
+        );
 
-        Designar::DynArray<std::unique_ptr<Enemy>> createdEnemies =
-            enemyFactory.createEnemies(enemyType, 1);
-
-        for (std::size_t enemyIndex = 0;
-             enemyIndex < createdEnemies.size();
-             ++enemyIndex)
+        if (created.is_empty())
         {
-            std::unique_ptr<Enemy>& enemy =
-                createdEnemies[enemyIndex];
-
-            enemy->setPosition(
-                encounter.enemies[index].position);
-
-            enemy->setVisualScale(2.5f);
-
-            enemies.append(std::move(enemy));
+            continue;
         }
+
+        std::unique_ptr<Enemy> enemy =
+            std::move(created[0]);
+
+        const sf::Vector2f targetPosition{
+            encounter.enemies[i].position.x,
+            std::clamp(
+                encounter.enemies[i].position.y,
+                minY,
+                maxY
+            )
+        };
+
+        float entryX =
+            targetPosition.x +
+            GameConfig::Level2::EnemyEntryOffsetMapX * scale;
+
+        if (encounter.arenaBounds.has_value())
+        {
+            entryX = std::min(
+                entryX,
+                encounter.arenaBounds->maximumX -
+                    GameConfig::Level2::BodyHalfWidth
+            );
+        }
+
+        enemy->setPosition(sf::Vector2f{
+            entryX,
+            std::clamp(
+                targetPosition.y,
+                minY,
+                maxY
+            )
+        });
+
+        enemy->setVisualScale(
+    GameConfig::Level2::PlayerVisualScale
+        );
+
+        // Configuracion de colisiones para Soldier.
+        if (Soldier* soldier =
+                dynamic_cast<Soldier*>(enemy.get()))
+        {
+            soldier->setCollisionGeometry(
+                projectileCollisionAreas,
+                worldBounds
+            );
+        }
+
+        enteringEnemies.append({
+            enemy.get(),
+            targetPosition
+        });
+
+        enemies.append(std::move(enemy));
     }
 }
 
+
 void Level2::initializeCollisionAreas()
 {
-    collisionAreas.clear();
+    const float scale = getWorldScale(window);
+
+    movementCollisionAreas.clear();
+    projectileCollisionAreas.clear();
+
+    const auto appendObstacle =
+        [&](const GameConfig::CollisionObstacle& obstacle)
+    {
+        const GameConfig::Rect& bounds =
+            obstacle.bounds;
+
+        const sf::FloatRect area(
+            {
+                bounds.x * scale,
+                bounds.y * scale
+            },
+            {
+                bounds.width * scale,
+                bounds.height * scale
+            }
+        );
+
+        if (obstacle.blocksMovement)
+        {
+            movementCollisionAreas.append(area);
+        }
+
+        if (obstacle.blocksProjectiles)
+        {
+            projectileCollisionAreas.append(area);
+        }
+    };
+
+    for (const auto& obstacle :
+         GameConfig::Level2::Obstacles)
+    {
+        appendObstacle(obstacle);
+    }
 }
 
-bool Level2::collidesAt(const sf::Vector2f& position) const
-{
-    constexpr float bodyHalfWidth = 28.f;
-    constexpr float bodyHeight = 36.f;
 
-    if (position.x < bodyHalfWidth ||
-        position.x > worldBounds.position.x + worldBounds.size.x - bodyHalfWidth ||
-        position.y < bodyHeight ||
-        position.y > worldBounds.size.y)
+bool Level2::collidesAt(
+    const sf::Vector2f& position) const
+{
+    constexpr float bodyHalfWidth =
+        GameConfig::Level2::BodyHalfWidth;
+
+    constexpr float bodyHeight =
+        GameConfig::Level2::BodyHeight;
+
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
+
+    const float minimumX =
+        worldBounds.position.x + bodyHalfWidth;
+
+    const float maximumX =
+        worldBounds.position.x +
+        worldBounds.size.x -
+        bodyHalfWidth;
+
+    // Limites del escenario.
+    if (position.x < minimumX ||
+        position.x > maximumX ||
+        position.y < minY ||
+        position.y > maxY)
     {
         return true;
     }
 
+    // Rectangulo de colision del personaje.
     const sf::FloatRect body(
-        {position.x - bodyHalfWidth, position.y - bodyHeight},
-        {bodyHalfWidth * 2.f, bodyHeight});
+        {
+            position.x - bodyHalfWidth,
+            position.y - bodyHeight
+        },
+        {
+            bodyHalfWidth * 2.f,
+            bodyHeight
+        }
+    );
 
-    for (const sf::FloatRect& area : collisionAreas)
+    // Comprobar colisiones con los obstaculos.
+    for (const sf::FloatRect& area :
+         movementCollisionAreas)
     {
         if (area.findIntersection(body))
         {
@@ -263,41 +851,157 @@ bool Level2::collidesAt(const sf::Vector2f& position) const
     return false;
 }
 
+
 void Level2::resolveMovement(
     Entity& entity,
-    const sf::Vector2f& previousPosition)
+    const sf::Vector2f& previousPosition,
+    const std::optional<LevelArenaBounds>& activeArenaBounds)
 {
-    constexpr float bodyHalfWidth = 28.f;
-    constexpr float bodyHeight = 36.f;
+    constexpr float bodyHalfWidth =
+        GameConfig::Level2::BodyHalfWidth;
 
-    const sf::Vector2f target = entity.getPosition();
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
 
-    sf::Vector2f resolved = previousPosition;
+    const sf::Vector2f target =
+        entity.getPosition();
 
-    sf::Vector2f candidate(
-        std::clamp(
-            target.x,
-            bodyHalfWidth,
-            worldBounds.size.x - bodyHalfWidth),
-        resolved.y);
+    sf::Vector2f resolved =
+        previousPosition;
 
-    if (!collidesAt(candidate))
+    float minimumX =
+        worldBounds.position.x + bodyHalfWidth;
+
+    float maximumX =
+        worldBounds.position.x +
+        worldBounds.size.x -
+        bodyHalfWidth;
+
+    // Si existe una arena activa, limitar el movimiento en X.
+    if (activeArenaBounds.has_value())
     {
-        resolved.x = candidate.x;
+        minimumX = std::max(
+            minimumX,
+            activeArenaBounds->minimumX
+        );
+
+        maximumX = std::min(
+            maximumX,
+            activeArenaBounds->maximumX
+        );
     }
 
-    candidate = {
+    // Resolver primero el movimiento horizontal.
+    sf::Vector2f candidateX(
+        std::clamp(
+            target.x,
+            minimumX,
+            maximumX
+        ),
+        std::clamp(
+            resolved.y,
+            minY,
+            maxY
+        )
+    );
+
+    if (!collidesAt(candidateX))
+    {
+        resolved.x = candidateX.x;
+    }
+
+    // Resolver despues el movimiento vertical.
+    sf::Vector2f candidateY(
         resolved.x,
         std::clamp(
             target.y,
-            bodyHeight,
-            worldBounds.size.y)
-    };
+            minY,
+            maxY
+        )
+    );
 
-    if (!collidesAt(candidate))
+    if (!collidesAt(candidateY))
     {
-        resolved.y = candidate.y;
+        resolved.y = candidateY.y;
+    }
+    else
+    {
+        resolved.y = std::clamp(
+            resolved.y,
+            minY,
+            maxY
+        );
     }
 
     entity.setPosition(resolved);
+}
+
+
+void Level2::resolveCientifico1Movement(
+    const sf::Vector2f& previousPosition)
+{
+    constexpr float bodyHalfWidth =
+        GameConfig::Level2::BodyHalfWidth;
+
+    const float minY = getMinWalkableY(window);
+    const float maxY = getMaxWalkableY(window);
+
+    const sf::Vector2f target =
+        cientifico1.getPosition();
+
+    sf::Vector2f resolved =
+        previousPosition;
+
+    // El cientifico puede recorrer todo el escenario en X.
+    const float minimumX =
+        worldBounds.position.x + bodyHalfWidth;
+
+    const float maximumX =
+        worldBounds.position.x +
+        worldBounds.size.x -
+        bodyHalfWidth;
+
+    // Resolver movimiento horizontal.
+    sf::Vector2f candidateX(
+        std::clamp(
+            target.x,
+            minimumX,
+            maximumX
+        ),
+        std::clamp(
+            resolved.y,
+            minY,
+            maxY
+        )
+    );
+
+    if (!collidesAt(candidateX))
+    {
+        resolved.x = candidateX.x;
+    }
+
+    // Resolver movimiento vertical.
+    sf::Vector2f candidateY(
+        resolved.x,
+        std::clamp(
+            target.y,
+            minY,
+            maxY
+        )
+    );
+
+    if (!collidesAt(candidateY))
+    {
+        resolved.y = candidateY.y;
+    }
+    else
+    {
+        resolved.y = std::clamp(
+            resolved.y,
+            minY,
+            maxY
+        );
+    }
+
+    cientifico1.setPosition(resolved);
 }

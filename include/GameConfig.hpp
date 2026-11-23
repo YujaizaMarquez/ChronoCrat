@@ -229,6 +229,58 @@ inline constexpr Rect AmmoSegmentUpperLeft{0.f, 3.f, 3.f, 10.f};
 inline constexpr Rect AmmoSegmentMiddle{4.f, 12.f, 11.f, 3.f};
 }
 
+
+namespace Level2
+{
+    inline constexpr const char* BackgroundPath = "assets/level_pandemia/fondo_pandemia_dia.png";
+    inline constexpr float MapImageWidth = 3840.f;
+    inline constexpr float MapImageHeight = 1080.f;
+
+    inline constexpr float FirstWaveTriggerX = 900.f;
+    inline constexpr float FirstWaveMinX = 700.f;
+    inline constexpr float FirstWaveMaxX = 1800.f;
+    inline constexpr float FirstWaveSpawnX = 1400.f;
+    inline constexpr float FirstWaveSpawnY = 900.f;
+
+    inline constexpr float PlayerStartMapX = 300.f;
+    inline constexpr float PlayerStartMapY = 900.f;
+    inline constexpr float PlayerVisualScale = 2.5f;
+    inline constexpr int PlayerAttackDamage = 20;
+    inline constexpr float PlayerAttackRange = 80.f;
+    inline constexpr float PlayerAttackCooldown = 0.35f;
+
+    inline constexpr float Cientifico1StartMapX = 1600.f;
+    inline constexpr float Cientifico1StartMapY = 900.f;
+    inline constexpr float Cientifico1VisualScale = 1.f;
+    inline constexpr float Cientifico1InteractRadius = 110.f;
+    inline constexpr float Cientifico1FollowDistance = 95.f;
+
+    inline constexpr float EnemyEntryOffsetMapX = 250.f;
+    inline constexpr float EnemyEntryArrivalDistance = 12.f;
+    inline constexpr float EnemyVisualScale = 1.f;
+    inline constexpr float BodyHalfWidth = 24.f;
+    inline constexpr float BodyHeight = 64.f;
+
+    inline constexpr float EquippedWeaponFacingOffset = 28.f;
+    inline constexpr float EquippedWeaponHeightOffset = -24.f;
+
+    inline constexpr float HealthBarMargin = 20.f;
+    inline constexpr float HealthBarWidth = 220.f;
+    inline constexpr float HealthBarHeight = 18.f;
+    inline constexpr float EnemyHealthBarRightOffset = 240.f;
+    inline const sf::Color HealthBarBackground{40, 40, 40, 220};
+    inline const sf::Color PlayerHealthBarColor{70, 210, 110, 255};
+    inline const sf::Color EnemyHealthBarColor{220, 65, 65, 255};
+
+    inline constexpr float PlayerBulletSpawnOffsetX = 36.f;
+    inline constexpr float PlayerBulletSpawnOffsetY = -24.f;
+    inline constexpr float PlayerBulletSpeed = 950.f;
+    inline const sf::Color PlayerBulletColor{255, 220, 90, 255};
+
+    inline constexpr CollisionObstacle Obstacles[] = {
+        {{800.f, 760.f, 120.f, 120.f}, true, true}
+    };
+}
 namespace LevelState
 {
 inline constexpr float CameraFollowSpeed = 5.f;

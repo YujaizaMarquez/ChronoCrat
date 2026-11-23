@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Enemy.hpp"
 #include <array.hpp>
 #include <cstddef>
