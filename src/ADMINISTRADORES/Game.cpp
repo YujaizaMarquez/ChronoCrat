@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
+#include "levels/FutureLevel1.hpp"
 #include "levels/Level2.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
@@ -72,6 +73,12 @@ bool Game::startLevel(LevelEra era, int number)
     if (era == LevelEra::Present && number == 1)
     {
         pushState(std::make_unique<Level2>(window.get(), this));
+        return true;
+    }
+    
+    if (era == LevelEra::Future && number == 1)
+    {
+        pushState(std::make_unique<FutureLevel1>(window.get(), this));
         return true;
     }
 
