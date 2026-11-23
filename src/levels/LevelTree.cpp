@@ -177,3 +177,111 @@ bool LevelTree::complete_final_boss()
     root->get_key().completed = true;
     return true;
 }
+
+namespace
+{
+std::string eraToKey(LevelEra era)
+{
+    switch (era)
+    {
+        case LevelEra::Past: return "Past";
+        case LevelEra::Present: return "Present";
+        case LevelEra::Future: return "Future";
+        default: return "None";
+    }
+}
+}
+
+void LevelTree::reset()
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+
+    root->get_key().completed = false;
+    for (Designar::MTreeNode<LevelInfo>* miniBoss = root->get_first_child();
+         miniBoss != nullptr; miniBoss = miniBoss->get_right_sibling())
+    {
+        miniBoss->get_key().completed = false;
+        for (Designar::MTreeNode<LevelInfo>* level = miniBoss->get_first_child();
+             level != nullptr; level = level->get_right_sibling())
+        {
+            level->get_key().completed = false;
+        }
+    }
+}
+
+Designar::DynArray<std::string> LevelTree::export_progress() const
+{
+    Designar::DynArray<std::string> completedNodes;
+    if (root == nullptr)
+    {
+        return completedNodes;
+    }
+
+    if (root->get_key().completed)
+    {
+        completedNodes.append("FinalBoss");
+    }
+
+    for (Designar::MTreeNode<LevelInfo>* miniBoss = root->get_first_child();
+         miniBoss != nullptr; miniBoss = miniBoss->get_right_sibling())
+    {
+        const std::string prefix = eraToKey(miniBoss->get_key().era);
+        if (miniBoss->get_key().completed)
+        {
+            completedNodes.append(prefix + ":MiniBoss");
+        }
+
+        for (Designar::MTreeNode<LevelInfo>* level = miniBoss->get_first_child();
+             level != nullptr; level = level->get_right_sibling())
+        {
+            if (level->get_key().completed)
+            {
+                completedNodes.append(
+                    prefix + ":" + std::to_string(level->get_key().number));
+            }
+        }
+    }
+
+    return completedNodes;
+}
+
+void LevelTree::import_progress(
+    const Designar::DynArray<std::string>& completedNodes)
+{
+    reset();
+    if (root == nullptr)
+    {
+        return;
+    }
+
+    const auto containsNode = [&](const std::string& id)
+    {
+        for (std::size_t i = 0; i < completedNodes.size(); ++i)
+        {
+            if (completedNodes[i] == id)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    root->get_key().completed = containsNode("FinalBoss");
+
+    for (Designar::MTreeNode<LevelInfo>* miniBoss = root->get_first_child();
+         miniBoss != nullptr; miniBoss = miniBoss->get_right_sibling())
+    {
+        const std::string prefix = eraToKey(miniBoss->get_key().era);
+        miniBoss->get_key().completed = containsNode(prefix + ":MiniBoss");
+
+        for (Designar::MTreeNode<LevelInfo>* level = miniBoss->get_first_child();
+             level != nullptr; level = level->get_right_sibling())
+        {
+            level->get_key().completed = containsNode(
+                prefix + ":" + std::to_string(level->get_key().number));
+        }
+    }
+}

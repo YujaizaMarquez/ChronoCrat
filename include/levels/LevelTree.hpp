@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mtreenode.hpp>
+#include <array.hpp>
+#include <string>
 
 enum class LevelEra
 {
@@ -43,6 +45,9 @@ public:
     bool is_era_completed(LevelEra era) const;
     bool can_fight_final_boss() const;
     bool complete_final_boss();
+    void reset();
+    Designar::DynArray<std::string> export_progress() const;
+    void import_progress(const Designar::DynArray<std::string>& completedNodes);
 
 private:
     Designar::MTreeNode<LevelInfo>* root = nullptr;

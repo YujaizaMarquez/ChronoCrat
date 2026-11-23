@@ -37,6 +37,12 @@ bool SaveManager::saveGame(const SaveData& data, const std::string& filepath) {
         }
         j["inventory"] = invJson;
 
+        nlohmann::json nodesJson = nlohmann::json::array();
+        for (std::size_t i = 0; i < data.completedNodes.size(); ++i) {
+            nodesJson.push_back(data.completedNodes[i]);
+        }
+        j["completedNodes"] = nodesJson;
+
         std::ofstream file(filepath);
         if (!file.is_open()) return false;
 
@@ -87,6 +93,13 @@ bool SaveManager::loadGame(SaveData& outData, const std::string& filepath) {
         if (j.contains("inventory") && j["inventory"].is_array()) {
             for (const auto& item : j["inventory"]) {
                 outData.inventory.append(item.get<std::string>());
+            }
+        }
+
+        outData.completedNodes.clear();
+        if (j.contains("completedNodes") && j["completedNodes"].is_array()) {
+            for (const auto& item : j["completedNodes"]) {
+                outData.completedNodes.append(item.get<std::string>());
             }
         }
 

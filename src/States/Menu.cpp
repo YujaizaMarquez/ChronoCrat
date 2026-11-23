@@ -213,9 +213,18 @@ void Menu::handleEvent(sf::Event& event)
                 return;
             }
 
-            if (getSelectedButton(mousePosition) == 0 && game != nullptr)
+            const int selected = getSelectedButton(mousePosition);
+            if (selected == 0 && game != nullptr)
             {
                 game->startNewGame();
+            }
+            else if (selected == 1 && game != nullptr)
+            {
+                game->continueGame();
+            }
+            else if (selected == 2)
+            {
+                window->close();
             }
         }
     }

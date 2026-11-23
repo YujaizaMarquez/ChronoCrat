@@ -16,6 +16,7 @@ struct SaveData {
 
     Designar::DynArray<std::string> defeatedBosses;
     Designar::DynArray<std::string> inventory;
+    Designar::DynArray<std::string> completedNodes;
 };
 
 class SaveManager {

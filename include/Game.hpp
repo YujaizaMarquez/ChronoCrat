@@ -31,6 +31,9 @@ class Game
     bool completeCurrentMiniBoss();
     bool canFightFinalBoss() const;
     bool completeFinalBoss();
+    bool continueGame();
+    bool saveProgress();
+    bool hasSaveFile() const;
     const LevelTree& getLevelTree() const;
     void run();
 };

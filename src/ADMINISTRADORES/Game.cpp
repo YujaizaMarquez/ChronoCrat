@@ -1,10 +1,26 @@
 #include "Game.hpp"
+#include "Savemanager.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
 #include "levels/Level2.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
+#include <string>
+
+namespace
+{
+std::string eraToString(LevelEra era)
+{
+    switch (era)
+    {
+        case LevelEra::Past: return "Past";
+        case LevelEra::Present: return "Present";
+        case LevelEra::Future: return "Future";
+        default: return "None";
+    }
+}
+}
 
 Game::Game() 
 {
@@ -42,6 +58,8 @@ bool Game::startNewGame()
         return false;
     }
 
+    levelTree.reset();
+
     pushState(
         std::make_unique<LevelSelectionMenu>(
             window.get(),
@@ -52,6 +70,50 @@ bool Game::startNewGame()
     return true;
 }
 
+
+bool Game::continueGame()
+{
+    if (hasActiveEra)
+    {
+        return false;
+    }
+
+    SaveData data;
+    if (!SaveManager::loadGame(data))
+    {
+        return false;
+    }
+
+    levelTree.import_progress(data.completedNodes);
+    pushState(std::make_unique<LevelSelectionMenu>(window.get(), this));
+    return true;
+}
+
+bool Game::saveProgress()
+{
+    // Bloqueo explícito: no se permite guardar mientras se está jugando un nivel
+    if (hasActiveEra)
+    {
+        return false;
+    }
+
+    SaveData data;
+    data.currentEra = eraToString(activeEra);
+    data.levelId = 0;
+
+    const Designar::DynArray<std::string> progress = levelTree.export_progress();
+    for (std::size_t i = 0; i < progress.size(); ++i)
+    {
+        data.completedNodes.append(progress[i]);
+    }
+
+    return SaveManager::saveGame(data);
+}
+
+bool Game::hasSaveFile() const
+{
+    return SaveManager::hasSaveFile();
+}
 
 
 bool Game::startLevel(LevelEra era, int number)
@@ -136,6 +198,7 @@ bool Game::completeCurrentLevel()
         return false;
 
     hasActiveEra = false;
+    saveProgress();
 
     return true;
 }
@@ -153,6 +216,7 @@ bool Game::completeCurrentMiniBoss()
     }
 
     hasActiveEra = false;
+    saveProgress();
     return true;
 }
 
@@ -164,7 +228,13 @@ bool Game::canFightFinalBoss() const
 
 bool Game::completeFinalBoss()
 {
-    return canFightFinalBoss() && levelTree.complete_final_boss();
+    if (!canFightFinalBoss() || !levelTree.complete_final_boss())
+    {
+        return false;
+    }
+
+    saveProgress();
+    return true;
 }
 
 const LevelTree& Game::getLevelTree() const
