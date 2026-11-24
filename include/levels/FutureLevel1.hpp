@@ -14,6 +14,7 @@ public:
     FutureLevel1(sf::RenderWindow* window, Game* game);
 
 protected:
+    Player& getPlayer() override;
     sf::Vector2f getPlayerPosition() const override;
     void handleLevelEvent(sf::Event& event) override;
     void updateLevel(
@@ -31,18 +32,16 @@ private:
         sf::Vector2f target;
     };
 
-    struct MedkitDrop
+    struct SteamParticle
     {
-        sf::Vector2f position;
-        float animTime = 0.f;
-    };
-
-    struct FireEmber
-    {
+        sf::Vector2f origin;
         sf::Vector2f offset;
+        float velocityX;
         float velocityY;
+        float baseRadius;
         float life;
         float maxLife;
+        float phase;
     };
 
     Player player;
@@ -51,14 +50,14 @@ private:
     Designar::DynArray<EnemyEntrance> enteringEnemies;
     Designar::DynArray<Bullet> playerBullets;
     Designar::DynArray<std::unique_ptr<Item>> worldWeapons;
-    Designar::DynArray<MedkitDrop> medkits;
-    Designar::DynArray<FireEmber> fireEmbers;
+    Designar::DynArray<sf::Vector2f> radioactiveVents;
+    Designar::DynArray<SteamParticle> steamParticles;
 
     sf::FloatRect worldBounds;
-    sf::Vector2f campfirePosition;
-    float campfireAnimTime = 0.f;
-    float campfireBurnTimer = 0.f;
+    float steamAnimTime = 0.f;
+    float steamDamageTimer = 0.f;
     float damageFlashTimer = 0.f;
+    sf::Color damageFlashColor{220, 30, 30};
     int previousPlayerHp = 0;
 
     int activeEncounterIndex = -1;
@@ -71,10 +70,8 @@ private:
     void updateWorldWeapons(float deltaTime);
     void updatePlayerWeapon(float deltaTime);
     void updatePlayerBullets(float deltaTime);
-    void updateCampfire(float deltaTime);
-    void updateMedkits(float deltaTime);
+    void updateRadioactiveVents(float deltaTime);
     void spawnEnemyDrop(const sf::Vector2f& position);
-    void drawCampfire();
-    void drawMedkits();
+    void drawRadioactiveVents();
     void drawAmmoCounter(int ammo);
 };

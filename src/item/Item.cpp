@@ -56,6 +56,21 @@ bool Item::loadSpriteSheet(const std::string& path, bool maskBlackBackground)
     return true;
 }
 
+bool Item::loadFromImage(const sf::Image& image)
+{
+    if (!texture.loadFromImage(image))
+    {
+        std::cerr << "[Item] No se pudo crear la textura desde imagen\n";
+        return false;
+    }
+
+    texture.setSmooth(false);
+    textureLoaded = true;
+    animation.attachSprite(sprite);
+    sprite.setPosition(position);
+    return true;
+}
+
 ItemType Item::getType() const
 {
     return type;

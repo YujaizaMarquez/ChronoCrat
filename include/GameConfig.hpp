@@ -118,6 +118,15 @@ inline constexpr int MagazineCapacity = 30;
 inline constexpr float FireInterval = 0.18f;
 }
 
+namespace Medkit
+{
+inline constexpr char ImagePath[] = "";
+inline constexpr int ImageWidth = 32;
+inline constexpr int ImageHeight = 24;
+inline constexpr float VisualScale = 1.4f;
+inline constexpr int HealAmount = 45;
+}
+
 namespace Soldier
 {
 inline constexpr float DetectionRange = 2000.f;
@@ -311,12 +320,19 @@ struct ArenaLayout
     std::size_t robotCount;
 };
 
-inline constexpr char BackgroundPath[] = "assets/futuro/fondo_fut.jpeg";
-inline constexpr float MapImageWidth = 5856.f;
+struct HazardPoint
+{
+    float mapX;
+    float mapY;
+};
+
+// Verifica que el nombre y las dimensiones coincidan con el nuevo archivo en assets/futuro/
+inline constexpr char BackgroundPath[] = "assets/futuro/fondo_futuro.jpeg";
+inline constexpr float MapImageWidth = 6400.f;
 inline constexpr float MapImageHeight = 704.f;
 
-inline constexpr float PlayerStartMapX = 200.f;
-inline constexpr float PlayerStartMapY = 615.f;
+inline constexpr float PlayerStartMapX = MapImageWidth * 0.035f;
+inline constexpr float PlayerStartMapY = MapImageHeight * 0.870f;
 inline constexpr float PlayerVisualScale = 2.5f;
 inline constexpr float EnemyVisualScale = 2.5f;
 inline constexpr int PlayerAttackDamage = 35;
@@ -328,30 +344,44 @@ inline constexpr float WeaponPickupRadius = 80.f;
 inline constexpr float EquippedWeaponFacingOffset = 18.f;
 inline constexpr float EquippedWeaponHeightOffset = -58.f;
 
-// Franja caminable de la calle (sin obstáculos internos)
-inline constexpr float WalkableMinimumMapY = 545.f;
-inline constexpr float WalkableMaximumMapY = 680.f;
-inline constexpr float EnemyMinimumSpawnMapY = 585.f;
-inline constexpr float EnemyMaximumSpawnMapY = 640.f;
+// Franja caminable ajustada al asfalto (debajo de los vehículos estacionados y sobre los escombros inferiores)
+inline constexpr float WalkableMinimumMapY = MapImageHeight * 0.780f;
+inline constexpr float WalkableMaximumMapY = MapImageHeight * 0.960f;
+inline constexpr float EnemyMinimumSpawnMapY = MapImageHeight * 0.825f;
+inline constexpr float EnemyMaximumSpawnMapY = MapImageHeight * 0.920f;
 inline constexpr float EnemyEntryOffsetMapX = 120.f;
 inline constexpr float EnemyEntryArrivalDistance = 8.f;
 
-// Fogata animada y daño por quemadura
-inline constexpr float CampfireMapX = 4665.f;
-inline constexpr float CampfireMapY = 985.f;
-inline constexpr float CampfireBurnRadiusMap = 78.f;
-inline constexpr int CampfireBurnDamage = 8;
-inline constexpr float CampfireBurnInterval = 0.75f;
+// Hoyos con vapor radiactivo sobre el asfalto (hoyo 1 junto al carro volcado, hoyo 2 antes del segundo bus)
+inline constexpr std::array<HazardPoint, 2> RadioactiveVentPositions{{
+    {MapImageWidth * 0.480f, MapImageHeight * 0.900f},
+    {MapImageWidth * 0.812f, MapImageHeight * 0.900f}
+}};
+inline constexpr float SteamHazardRadiusXMap = MapImageWidth * 0.011f;
+inline constexpr float SteamHazardRadiusYMap = MapImageHeight * 0.030f;
+inline constexpr int SteamDamage = 10;
+inline constexpr float SteamDamageInterval = 0.75f;
 
 // Drops de enemigos (botiquines y armas)
 inline constexpr int MedkitDropChancePercent = 35;
 inline constexpr int WeaponDropChancePercent = 15;
-inline constexpr int MedkitHealAmount = 45;
-inline constexpr float MedkitPickupRadius = 52.f;
 
-inline constexpr ArenaLayout FirstArena{350.f, 1950.f, 950.f, 1650.f, 3};
-inline constexpr ArenaLayout SecondArena{2150.f, 3850.f, 2800.f, 3550.f, 4};
-inline constexpr ArenaLayout ThirdArena{4050.f, 5750.f, 4700.f, 5450.f, 5};
+// Arenas: la 1 es limpia; la 2 y la 3 obligan a pelear alrededor de cada hoyo radiactivo
+inline constexpr ArenaLayout FirstArena{
+    MapImageWidth * 0.060f, MapImageWidth * 0.335f,
+    MapImageWidth * 0.165f, MapImageWidth * 0.285f,
+    3
+};
+inline constexpr ArenaLayout SecondArena{
+    MapImageWidth * 0.370f, MapImageWidth * 0.655f,
+    MapImageWidth * 0.505f, MapImageWidth * 0.615f,
+    4
+};
+inline constexpr ArenaLayout ThirdArena{
+    MapImageWidth * 0.690f, MapImageWidth * 0.980f,
+    MapImageWidth * 0.835f, MapImageWidth * 0.945f,
+    5
+};
 
 inline constexpr float BodyHalfWidth = 28.f;
 inline constexpr float PlayerBulletSpawnOffsetX = 38.f;

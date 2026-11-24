@@ -37,6 +37,7 @@ public:
         int frameWidth = GameConfig::Animation::DefaultFrameWidth,
         int frameHeight = GameConfig::Animation::DefaultFrameHeight);
     bool loadSpriteSheet(const std::string& path, bool maskBlackBackground = false);
+    bool loadFromImage(const sf::Image& image);
     ItemType getType() const;
     float getDurability() const;
     float getDamage() const;

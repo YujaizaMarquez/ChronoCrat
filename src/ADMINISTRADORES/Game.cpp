@@ -104,38 +104,27 @@ bool Game::startLevel(LevelEra era, int number)
     if (!selectEra(era))
         return false;
 
-    // Por ahora solo tenemos conectados estos dos escenarios.
     if (era == LevelEra::Past && number == 1)
     {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
         pushState(std::make_unique<Level1>(window.get(), this));
         return true;
     }
 
     if (era == LevelEra::Present && number == 1)
     {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
         pushState(std::make_unique<Level2>(window.get(), this));
         return true;
     }
-    
+
     if (era == LevelEra::Future && number == 1)
     {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
         pushState(std::make_unique<FutureLevel1>(window.get(), this));
-        return true;
-    }
-
-    if (era == LevelEra::Past && number == 1)
-    {
-        lastPlayedEra = era;
-        lastPlayedLevelNumber = number;
-        pushState(std::make_unique<Level1>(window.get(), this));
-        return true;
-    }
-
-    if (era == LevelEra::Present && number == 1)
-    {
-        lastPlayedEra = era;
-        lastPlayedLevelNumber = number;
-        pushState(std::make_unique<Level2>(window.get(), this));
         return true;
     }
 
