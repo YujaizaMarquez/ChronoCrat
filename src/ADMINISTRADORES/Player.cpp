@@ -2,6 +2,7 @@
 #include "item/Weapon.hpp"
 #include <cmath>
 #include <iostream>
+#include <stdexcept>
 #include <utility>
 
 Player::Player() 
@@ -40,10 +41,52 @@ void Player::handleInput(float deltaTime)
 
     move(dir, deltaTime);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y) && attackTimer <= 0.f) {
-        attackingThisFrame = true;
-        attackTimer = attackCooldown;
-        std::cout << "[Player] Ataque cuerpo a cuerpo lanzado (Tecla Y)\n";
+}
+
+void Player::configureSpriteAnimations(
+    const std::string& walkPath,
+    const std::string& maskedWalkPath,
+    const std::string& attackPath,
+    const std::string& deathPath)
+{
+    walkSpriteSheet = walkPath;
+    maskedWalkSpriteSheet = maskedWalkPath;
+    attackSpriteSheet = attackPath;
+    deathSpriteSheet = deathPath;
+
+    if (!loadSpriteSheet(walkSpriteSheet)) {
+        throw std::runtime_error(
+            "No se pudo cargar el sprite de caminar del jugador");
+    }
+
+    addAnimationClip("idle", 0, 1, 0.12f, true);
+    addAnimationClip("walk", 0, 5, 0.12f, true);
+    addAnimationClip("attack", 0, AttackFrameCount, 0.07f, false);
+    addAnimationClip("die", 0, 5, 0.12f, false);
+    spriteAnimationsConfigured = true;
+    playAnimation("walk", true);
+}
+
+void Player::setWearingMask(bool wearing)
+{
+    if (wearingMask == wearing) {
+        return;
+    }
+
+    wearingMask = wearing;
+    if (!spriteAnimationsConfigured ||
+        attackAnimationActive ||
+        isDead()) {
+        return;
+    }
+
+    const std::string& path = wearingMask
+        ? maskedWalkSpriteSheet
+        : walkSpriteSheet;
+
+    if (!loadSpriteSheet(path)) {
+        throw std::runtime_error(
+            "No se pudo cargar el sprite de caminar con el estado actual");
     }
 }
 
@@ -60,12 +103,69 @@ void Player::update(float deltaTime, bool inputEnabled)
         attackTimer -= deltaTime;
     }
 
+    const bool attackKeyPressed =
+        inputEnabled &&
+        !isDead() &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y);
+    const bool attackPressedThisFrame =
+        attackKeyPressed && !attackKeyWasPressed;
+    attackKeyWasPressed = attackKeyPressed;
+
+    if (attackPressedThisFrame) {
+        attackFrameIndex = (attackFrameIndex + 1) % AttackFrameCount;
+        if (attackTimer <= 0.f) {
+            attackingThisFrame = true;
+            attackTimer = attackCooldown;
+            std::cout << "[Player] Ataque cuerpo a cuerpo lanzado (Tecla Y)\n";
+        }
+    }
+
     if (inputEnabled) {
         handleInput(deltaTime);
     } else {
         move({0.f, 0.f}, deltaTime);
     }
+
+    if (spriteAnimationsConfigured) {
+        if (isDead()) {
+            if (!deathAnimationStarted) {
+                if (!loadSpriteSheet(deathSpriteSheet)) {
+                    throw std::runtime_error(
+                        "No se pudo cargar el sprite de muerte del jugador");
+                }
+                playAnimation("die", true);
+                deathAnimationStarted = true;
+            } else {
+                playAnimation("die");
+            }
+        } else if (attackKeyPressed) {
+            if (!attackAnimationActive) {
+                if (!loadSpriteSheet(attackSpriteSheet)) {
+                    throw std::runtime_error(
+                        "No se pudo cargar el sprite de ataque del jugador");
+                }
+                attackAnimationActive = true;
+            }
+            playAnimation("attack");
+            setAnimationFrame(attackFrameIndex);
+        } else if (attackAnimationActive) {
+            attackAnimationActive = false;
+            const std::string& path = wearingMask
+                ? maskedWalkSpriteSheet
+                : walkSpriteSheet;
+            if (!loadSpriteSheet(path)) {
+                throw std::runtime_error(
+                    "No se pudo restaurar el sprite de caminar del jugador");
+            }
+            playAnimation("walk", true);
+        }
+    }
+
     Entity::update(deltaTime);
+
+    if (spriteAnimationsConfigured && attackKeyPressed) {
+        setAnimationFrame(attackFrameIndex);
+    }
 }
 
 bool Player::isDead() const

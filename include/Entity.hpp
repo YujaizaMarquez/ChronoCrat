@@ -29,11 +29,23 @@ public:
     virtual ~Entity() = default;
 
     bool loadFromJson(const std::string& jsonPath);
+    bool loadSpriteSheet(
+        const std::string& texturePath,
+        int frameWidth = 0,
+        int frameHeight = 0);
+    void addAnimationClip(
+        const std::string& name,
+        int row,
+        int frames,
+        float duration,
+        bool loop);
+    bool isAnimationFinished() const;
     void move(const sf::Vector2f& direction, float dt);
     void setVisualScale(float scale);
     void setFacingRight(bool right);
     bool isFacingRight() const;
     void playAnimation(const std::string& clipName, bool forceRestart = false);
+    void setAnimationFrame(int frame);
 
     virtual void update(float dt);
     virtual void draw(sf::RenderWindow& window);

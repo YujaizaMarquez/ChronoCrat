@@ -1,5 +1,5 @@
 
-#include "levels/Level2.hpp"
+#include "levels/Level_present/level2.hpp"
 #include "GameConfig.hpp"
 #include "Soldier.hpp"
 #include "item/Weapon.hpp"
@@ -103,6 +103,7 @@ Level2::Level2(sf::RenderWindow* window, Game* game)
     initializeAnimatedObjects();
 
     const float scale = getWorldScale(window);
+    initializeSerpent(scale);
     const float minY = getMinWalkableY(window);
     const float maxY = getMaxWalkableY(window);
 
@@ -120,6 +121,13 @@ Level2::Level2(sf::RenderWindow* window, Game* game)
 
     player.setVisualScale(
         GameConfig::Level2::PlayerVisualScale
+    );
+
+    player.configureSpriteAnimations(
+        GameConfig::Level2::PlayerWalkSpritePath,
+        GameConfig::Level2::PlayerMaskedWalkSpritePath,
+        GameConfig::Level2::PlayerAttackSpritePath,
+        GameConfig::Level2::PlayerDeathSpritePath
     );
 
     player.setCombatStats(
@@ -159,8 +167,14 @@ void Level2::initializeAnimatedObjects()
 {
     const float scale = getWorldScale(window);
 
-    if (!tapabocasTexture.loadFromFile(
-            "assets/level_pandemia/tapabocas_girando.png"))
+    tapabocas = std::make_unique<Mask>();
+    if (!tapabocas->loadFromFile(
+            "assets/level_pandemia/tapabocas_girando.png",
+            sf::Vector2f{
+                GameConfig::Level2::TapabocasMapX * scale,
+                GameConfig::Level2::TapabocasMapY * scale
+            },
+            sf::Vector2f{3.f, 3.f}))
     {
         throw std::runtime_error(
             "No se pudo cargar tapabocas_girando.png");
@@ -173,47 +187,45 @@ void Level2::initializeAnimatedObjects()
             "No se pudo cargar tubo_virus_transparente.png");
     }
 
-    tapabocasTexture.setSmooth(false);
     tuboVirusTexture.setSmooth(false);
 
-    tapabocasSprite.emplace(tapabocasTexture);
     tuboVirusSprite.emplace(tuboVirusTexture);
 
-    // Tapabocas: 5 frames de 20x100
-tapabocasSprite->setTextureRect(
-    sf::IntRect({0, 0}, {20, 100})
-);
-
-// Tubo: 5 frames de 64x320
-tuboVirusSprite->setTextureRect(
-    sf::IntRect({0, 0}, {64, 320})
-);
-
-    tapabocasSprite->setPosition(
-        sf::Vector2f(1038.f * scale, 866.f * scale));
+    // Tubo: 5 frames de 64x320
+    tuboVirusSprite->setTextureRect(
+        sf::IntRect({0, 0}, {64, 320}));
 
     tuboVirusSprite->setPosition(
         sf::Vector2f(1190.f * scale, 800.f * scale));
 
-    tapabocasSprite->setScale({3.f, 3.f});
-tuboVirusSprite->setScale({3.f, 3.f});
+    tuboVirusSprite->setScale({3.f, 3.f});
+}
+
+
+void Level2::initializeSerpent(float scale)
+{
+    auto created = enemyFactory.createEnemies("serpiente_murcielago", 1);
+    serpiente = std::move(created[0]);
+
+    serpiente->setCombatStats(
+        GameConfig::Level2::SerpentDetectionRange * scale,
+        GameConfig::Level2::SerpentAttackRange * scale,
+        GameConfig::Level2::SerpentAttackDamage,
+        GameConfig::Level2::SerpentAttackCooldown,
+        GameConfig::Enemy::ExperienceReward);
+    serpiente->setPosition(sf::Vector2f{
+        GameConfig::Level2::SerpentMapX * scale,
+        GameConfig::Level2::SerpentMapY * scale
+    });
 }
 
 
 void Level2::updateAnimatedObjects(float deltaTime)
 {
-    tapabocasAnimationTimer += deltaTime;
     tuboVirusAnimationTimer += deltaTime;
 
-    if (tapabocasAnimationTimer >= ObjectAnimationSpeed)
-    {
-        tapabocasAnimationTimer = 0.f;
-        tapabocasFrame = (tapabocasFrame + 1) % TotalObjectFrames;
-
-        tapabocasSprite->setTextureRect(
-    sf::IntRect({tapabocasFrame * 20, 0}, {20, 100})
-);
-    }
+    if (tapabocas)
+        tapabocas->update(deltaTime);
 
     if (tuboVirusAnimationTimer >= ObjectAnimationSpeed)
     {
@@ -228,13 +240,25 @@ void Level2::updateAnimatedObjects(float deltaTime)
 
 void Level2::drawAnimatedObjects()
 {
-    if (tapabocasSprite.has_value())
-        window->draw(*tapabocasSprite);
+    if (tapabocas)
+        tapabocas->draw(*window);
 
     if (tuboVirusSprite.has_value())
         window->draw(*tuboVirusSprite);
 }
 
+
+void Level2::updateSerpent(float deltaTime)
+{
+    if (!serpiente || serpiente->isDead())
+    {
+        return;
+    }
+
+    const sf::Vector2f previousPosition = serpiente->getPosition();
+    serpiente->updateAI(deltaTime, player);
+    resolveMovement(*serpiente, previousPosition, std::nullopt);
+}
 
 
 Player& Level2::getPlayer()
@@ -291,6 +315,32 @@ void Level2::updateLevel(
 
     player.update(deltaTime, !playerDefeated);
 
+    if (maskTimeRemaining > 0.f)
+    {
+        maskTimeRemaining = std::max(0.f, maskTimeRemaining - deltaTime);
+        if (maskTimeRemaining <= 0.f)
+        {
+            player.setWearingMask(false);
+        }
+    }
+
+    if (tapabocas && !playerDefeated && !player.isDead())
+    {
+        const sf::Vector2f difference =
+            tapabocas->getPosition() - player.getPosition();
+        const float distance = std::sqrt(
+            difference.x * difference.x +
+            difference.y * difference.y
+        );
+
+        if (distance <= GameConfig::Level2::TapabocasEquipRadius)
+        {
+            player.setWearingMask(true);
+            maskTimeRemaining = GameConfig::Level2::MaskDuration;
+            tapabocas.reset();
+        }
+    }
+
     resolveMovement(
         player,
         previousPlayerPosition,
@@ -302,6 +352,7 @@ void Level2::updateLevel(
         playerDefeated = true;
     }
 
+    updateSerpent(deltaTime);
     updateCientifico1(deltaTime);
     updatePlayerWeapon(deltaTime);
 
@@ -481,6 +532,10 @@ void Level2::drawWorld()
         cientifico1.draw(*window);
     }
 
+    if (serpiente && !serpiente->isDead())
+    {
+        serpiente->draw(*window);
+    }
     player.draw(*window);
 
     if (Weapon* weapon = player.getEquippedWeapon())
@@ -642,12 +697,21 @@ void Level2::updatePlayerBullets(float deltaTime)
     Designar::DynArray<Entity*> targets;
 
     targets.reserve(enemies.size());
+    if (serpiente && !serpiente->isDead())
+    {
+        targets.reserve(enemies.size() + 1);
+    }
 
     for (std::size_t index = 0;
          index < enemies.size();
          ++index)
     {
         targets.append(enemies[index].get());
+    }
+
+    if (serpiente && !serpiente->isDead())
+    {
+        targets.append(serpiente.get());
     }
 
     for (std::size_t index = 0;

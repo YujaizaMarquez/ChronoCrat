@@ -36,6 +36,7 @@ public:
         int height = GameConfig::Animation::DefaultFrameHeight);
 
     void attachSprite(sf::Sprite& sprite);
+    void setFrameSize(int width, int height);
     void addClip(
         const std::string& name,
         int row,
@@ -44,6 +45,7 @@ public:
         bool loop = true);
     void loadFromJson(const nlohmann::json& animJson);
     void play(const std::string& name, bool forceRestart = false);
+    void setCurrentFrame(int frame);
     void setFacingRight(bool right);
     void update(float dt);
 

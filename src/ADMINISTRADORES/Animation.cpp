@@ -1,5 +1,6 @@
 #include "Animation.hpp"
 #include <cmath>
+#include <stdexcept>
 
 Animation::Animation(int width, int height)
     : frameWidth(width), frameHeight(height) {}
@@ -29,6 +30,18 @@ void Animation::attachSprite(sf::Sprite& sprite) {
         static_cast<float>(frameHeight)
     });
     targetSprite->setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
+}
+
+void Animation::setFrameSize(int width, int height) {
+    frameWidth = width;
+    frameHeight = height;
+    if (targetSprite) {
+        targetSprite->setOrigin({
+            frameWidth / 2.f,
+            static_cast<float>(frameHeight)
+        });
+        applyTextureRect();
+    }
 }
 
 void Animation::addClip(const std::string& name, int row, int frames, float duration, bool loop) {
@@ -61,6 +74,21 @@ void Animation::play(const std::string& name, bool forceRestart) {
     currentClipIndex = idx;
     currentClipName = name;
     currentFrame = 0;
+    timer = 0.f;
+    finished = false;
+    applyTextureRect();
+}
+
+void Animation::setCurrentFrame(int frame) {
+    if (currentClipIndex < 0) {
+        throw std::logic_error("No hay una animacion activa");
+    }
+
+    if (frame < 0 || frame >= clips[currentClipIndex].frameCount) {
+        throw std::out_of_range("El cuadro no pertenece a la animacion activa");
+    }
+
+    currentFrame = frame;
     timer = 0.f;
     finished = false;
     applyTextureRect();

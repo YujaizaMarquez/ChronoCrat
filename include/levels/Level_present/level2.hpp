@@ -5,6 +5,7 @@
 #include "EnemyFactory.hpp"
 #include "Entity.hpp"
 #include "Player.hpp"
+#include "levels/Level_present/Mask.hpp"
 #include "levels/LevelState.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -50,24 +51,27 @@ private:
     Player player;
 
 
-    sf::Texture tapabocasTexture;
-sf::Texture tuboVirusTexture;
+    sf::Texture tuboVirusTexture;
 
-std::optional<sf::Sprite> tapabocasSprite;
-std::optional<sf::Sprite> tuboVirusSprite;
+    std::unique_ptr<Mask> tapabocas;
+    std::optional<sf::Sprite> tuboVirusSprite;
 
-int tapabocasFrame = 0;
-int tuboVirusFrame = 0;
+    int tuboVirusFrame = 0;
 
-float tapabocasAnimationTimer = 0.f;
-float tuboVirusAnimationTimer = 0.f;
+    float tuboVirusAnimationTimer = 0.f;
 
-static constexpr int TotalObjectFrames = 5;
-static constexpr float ObjectAnimationSpeed = 0.10f;
+    static constexpr int TotalObjectFrames = 5;
+    static constexpr float ObjectAnimationSpeed = 0.10f;
 
-void initializeAnimatedObjects();
-void updateAnimatedObjects(float deltaTime);
-void drawAnimatedObjects();
+    void initializeAnimatedObjects();
+    void updateAnimatedObjects(float deltaTime);
+    void drawAnimatedObjects();
+
+    std::unique_ptr<Enemy> serpiente;
+    float maskTimeRemaining = 0.f;
+
+    void initializeSerpent(float scale);
+    void updateSerpent(float deltaTime);
 
     // Científico NPC que se puede rescatar.
     Entity cientifico1;
