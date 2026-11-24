@@ -22,8 +22,11 @@ private:
     bool attackingThisFrame;
 
     Inventory inventory;
+    std::size_t selectedInventorySlot = 0;
     Designar::DynArray<std::string> savedInventoryIds;
     Designar::DynArray<std::string> defeatedBosses;
+
+    void updateEquippedInventoryItem();
 
 public:
     Player();
@@ -45,6 +48,9 @@ public:
     int getExp() const;
 
     bool addItem(std::unique_ptr<Item>&& item);
+    bool selectInventorySlotFromKey(sf::Keyboard::Key key);
+    void selectInventorySlot(std::size_t index);
+    std::size_t getSelectedInventorySlot() const;
     void addItem(const std::string& item);
     bool hasItem(ItemType type) const;
     bool hasItem(const std::string& item) const;

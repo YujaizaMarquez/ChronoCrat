@@ -1,4 +1,5 @@
 #include "EnemyFactory.hpp"
+#include "Scientist.hpp"
 #include "Soldier.hpp"
 #include "Robot.hpp"
 #include <stdexcept>
@@ -11,6 +12,10 @@ EnemyFactory::EnemyFactory()
     });
     registerEnemyType("robot", [] {
         return std::make_unique<Robot>();
+    });
+
+    registerEnemyType("cientifico1", [] {
+        return std::make_unique<Scientist>();
     });
 }
 

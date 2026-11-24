@@ -11,6 +11,7 @@ public:
 
     void use() override;
     bool isEquipped() const;
+    void setEquipped(bool equipped);
     void updateFireCooldown(float deltaTime);
     bool tryFire();
     int getAmmo() const;

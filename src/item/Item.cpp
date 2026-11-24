@@ -185,6 +185,37 @@ void Item::drawHeld(sf::RenderWindow& window) const
     }
 }
 
+void Item::drawInventoryIcon(
+    sf::RenderWindow& window,
+    const sf::FloatRect& bounds) const
+{
+    if (!textureLoaded)
+    {
+        return;
+    }
+
+    sf::Sprite icon(sprite);
+    const sf::FloatRect localBounds = icon.getLocalBounds();
+    if (localBounds.size.x <= 0.f || localBounds.size.y <= 0.f)
+    {
+        return;
+    }
+
+    const float scale = std::min(
+        bounds.size.x / localBounds.size.x,
+        bounds.size.y / localBounds.size.y);
+    icon.setOrigin({
+        localBounds.position.x + localBounds.size.x / 2.f,
+        localBounds.position.y + localBounds.size.y / 2.f
+    });
+    icon.setScale({scale, scale});
+    icon.setPosition({
+        bounds.position.x + bounds.size.x / 2.f,
+        bounds.position.y + bounds.size.y / 2.f
+    });
+    window.draw(icon);
+}
+
 bool Item::isBeingPickedUp() const
 {
     return beingPickedUp;

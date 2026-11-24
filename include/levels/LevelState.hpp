@@ -46,6 +46,8 @@ struct LevelWorldBounds
     sf::Vector2f maximum;
 };
 
+class Player;
+
 class LevelState : public State
 {
 public:
@@ -62,12 +64,15 @@ public:
     void draw() final;
 
 protected:
+    virtual Player& getPlayer() = 0;
     virtual sf::Vector2f getPlayerPosition() const = 0;
     virtual void handleLevelEvent(sf::Event& event) = 0;
     virtual void updateLevel(
         float deltaTime,
         bool playerMovementBlocked,
         std::optional<LevelArenaBounds> activeArenaBounds) = 0;
+    void triggerVictory();
+    void triggerDefeat();
     virtual void drawWorld() = 0;
     virtual void drawHud() = 0;
     virtual void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) = 0;
@@ -95,6 +100,7 @@ private:
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
     bool levelCompleted = false;
+    bool resultShown = false;
 
     void processEncounterTriggers();
     bool canActivateEncounter(int encounterIndex) const;

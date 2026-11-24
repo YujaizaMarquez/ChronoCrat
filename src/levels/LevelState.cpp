@@ -1,5 +1,9 @@
 #include "levels/LevelState.hpp"
 #include "Game.hpp"
+#include "States/OptionsState.hpp"
+#include "Player.hpp"
+#include "item/InventoryHud.hpp"
+#include "States/LevelResultState.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -56,6 +60,22 @@ void LevelState::update(float deltaTime)
 
 void LevelState::handleEvent(sf::Event& event)
 {
+    const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
+    if (keyPressed != nullptr)
+    {
+        if (keyPressed->code == sf::Keyboard::Key::Escape)
+        {
+            game->pushState(
+                std::make_unique<OptionsState>(window, game, *this));
+            return;
+        }
+
+        if (getPlayer().selectInventorySlotFromKey(keyPressed->code))
+        {
+            return;
+        }
+    }
+
     handleLevelEvent(event);
 }
 
@@ -66,6 +86,11 @@ void LevelState::draw()
     drawWorld();
     window->setView(window->getDefaultView());
     drawHud();
+    const Player& player = getPlayer();
+    drawInventoryHud(
+        *window,
+        player.getInventory(),
+        player.getSelectedInventorySlot());
 }
 
 void LevelState::completeEncounter(int encounterIndex)
@@ -102,6 +127,37 @@ bool LevelState::completeLevelProgress()
 
     levelCompleted = true;
     return true;
+}
+
+void LevelState::triggerVictory()
+{
+    if (resultShown || game == nullptr)
+    {
+        return;
+    }
+
+    completeLevelProgress();
+    resultShown = true;
+    game->pushState(std::make_unique<LevelResultState>(
+        window,
+        game,
+        *this,
+        LevelResultState::Result::Victory));
+}
+
+void LevelState::triggerDefeat()
+{
+    if (resultShown || game == nullptr)
+    {
+        return;
+    }
+
+    resultShown = true;
+    game->pushState(std::make_unique<LevelResultState>(
+        window,
+        game,
+        *this,
+        LevelResultState::Result::Defeat));
 }
 
 bool LevelState::isPlayerMovementBlocked() const

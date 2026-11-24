@@ -51,6 +51,9 @@ public:
     void update(float deltaTime, const sf::Vector2f& playerPosition);
     void draw(sf::RenderWindow& window) const;
     void drawHeld(sf::RenderWindow& window) const;
+    void drawInventoryIcon(
+        sf::RenderWindow& window,
+        const sf::FloatRect& bounds) const;
     bool isBeingPickedUp() const;
     bool isCollected() const;
     virtual void use() = 0;
