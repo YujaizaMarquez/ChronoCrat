@@ -3,6 +3,7 @@
 #include "States/OptionsState.hpp"
 #include "Player.hpp"
 #include "item/InventoryHud.hpp"
+#include "States/LevelResultState.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -126,6 +127,37 @@ bool LevelState::completeLevelProgress()
 
     levelCompleted = true;
     return true;
+}
+
+void LevelState::triggerVictory()
+{
+    if (resultShown || game == nullptr)
+    {
+        return;
+    }
+
+    completeLevelProgress();
+    resultShown = true;
+    game->pushState(std::make_unique<LevelResultState>(
+        window,
+        game,
+        *this,
+        LevelResultState::Result::Victory));
+}
+
+void LevelState::triggerDefeat()
+{
+    if (resultShown || game == nullptr)
+    {
+        return;
+    }
+
+    resultShown = true;
+    game->pushState(std::make_unique<LevelResultState>(
+        window,
+        game,
+        *this,
+        LevelResultState::Result::Defeat));
 }
 
 bool LevelState::isPlayerMovementBlocked() const

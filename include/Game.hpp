@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <functional>
 #include "State.hpp"
 #include "stack.hpp"
 #include "levels/LevelTree.hpp"
@@ -13,6 +14,10 @@ class Game
         LevelTree levelTree;
         bool hasActiveEra = false;
         LevelEra activeEra = LevelEra::Past;
+        LevelEra lastPlayedEra = LevelEra::Past;
+        int lastPlayedLevelNumber = 1;
+        std::function<void()> pendingTransition;
+
     public:
     Game();
     ~Game();
@@ -20,6 +25,8 @@ class Game
     void pushState(std::unique_ptr<State> state);
     void popState();
     void returnToMainMenu();
+    void retryCurrentLevel();
+    void startNextLevel();
     bool startNewGame();
     bool startLevel(LevelEra era, int number);
     bool startMiniBoss(LevelEra era);

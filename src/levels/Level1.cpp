@@ -176,11 +176,12 @@ void Level1::updateLevel(
     player.update(deltaTime, !playerDefeated);
     resolveMovement(player, previousPlayerPosition, activeArenaBounds);
 
-    if (player.isDead())
-    {
-        playerDefeated = true;
-    }
-
+    if (player.isDead() && !playerDefeated)
+        {
+            playerDefeated = true;
+            triggerDefeat();
+            return;
+        }
     updateWorldWeapon(deltaTime);
     updatePlayerWeapon(deltaTime);
 
@@ -251,7 +252,8 @@ void Level1::updateLevel(
         activeEncounterIndex = -1;
         if (areAllEncountersCompleted() && !levelCompleted)
         {
-            levelCompleted = completeLevelProgress();
+            levelCompleted = true;
+            triggerVictory();
         }
     }
 }

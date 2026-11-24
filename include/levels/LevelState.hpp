@@ -71,6 +71,8 @@ protected:
         float deltaTime,
         bool playerMovementBlocked,
         std::optional<LevelArenaBounds> activeArenaBounds) = 0;
+    void triggerVictory();
+    void triggerDefeat();
     virtual void drawWorld() = 0;
     virtual void drawHud() = 0;
     virtual void spawnEncounter(int encounterIndex, const LevelEncounter& encounter) = 0;
@@ -98,6 +100,7 @@ private:
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
     bool levelCompleted = false;
+    bool resultShown = false;
 
     void processEncounterTriggers();
     bool canActivateEncounter(int encounterIndex) const;
