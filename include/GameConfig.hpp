@@ -303,6 +303,85 @@ namespace Level2
         {{800.f, 760.f, 120.f, 120.f}, true, true}
     };
 }
+
+namespace Robot
+{
+inline constexpr char DataPath[] = "data/robot.json";
+inline constexpr float DetectionRange = 1800.f;
+inline constexpr float MeleeRange = 95.f;
+inline constexpr float MeleeChaseRange = 210.f;
+inline constexpr int MeleeDamage = 18;
+inline constexpr float MeleeCooldown = 1.0f;
+inline constexpr float LaserRange = 620.f;
+inline constexpr float LaserCooldown = 1.35f;
+inline constexpr float LaserSpeed = 760.f;
+inline constexpr int LaserDamage = 14;
+inline constexpr float LaneTolerance = 14.f;
+inline constexpr float MuzzleOffset = 54.f;
+inline constexpr float MuzzleHeight = 64.f;
+inline constexpr int ExperienceReward = 65;
+inline const sf::Color LaserColor(60, 230, 255);
+}
+
+namespace FutureLevel1
+{
+struct ArenaLayout
+{
+    float minimumMapX;
+    float maximumMapX;
+    float spawnMinimumMapX;
+    float spawnMaximumMapX;
+    std::size_t robotCount;
+};
+
+inline constexpr char BackgroundPath[] = "assets/futuro/fondo_fut.jpeg";
+inline constexpr float MapImageWidth = 5856.f;
+inline constexpr float MapImageHeight = 704.f;
+
+inline constexpr float PlayerStartMapX = 200.f;
+inline constexpr float PlayerStartMapY = 615.f;
+inline constexpr float PlayerVisualScale = 2.5f;
+inline constexpr float EnemyVisualScale = 2.5f;
+inline constexpr int PlayerAttackDamage = 35;
+inline constexpr float PlayerAttackRange = 130.f;
+inline constexpr float PlayerAttackCooldown = 0.45f;
+inline constexpr float WeaponSpawnOffsetX = 70.f;
+inline constexpr float WeaponSpawnOffsetY = -8.f;
+inline constexpr float WeaponPickupRadius = 80.f;
+inline constexpr float EquippedWeaponFacingOffset = 18.f;
+inline constexpr float EquippedWeaponHeightOffset = -58.f;
+
+// Franja caminable de la calle (sin obstáculos internos)
+inline constexpr float WalkableMinimumMapY = 545.f;
+inline constexpr float WalkableMaximumMapY = 680.f;
+inline constexpr float EnemyMinimumSpawnMapY = 585.f;
+inline constexpr float EnemyMaximumSpawnMapY = 640.f;
+inline constexpr float EnemyEntryOffsetMapX = 120.f;
+inline constexpr float EnemyEntryArrivalDistance = 8.f;
+
+// Fogata animada y daño por quemadura
+inline constexpr float CampfireMapX = 4665.f;
+inline constexpr float CampfireMapY = 600.f;
+inline constexpr float CampfireBurnRadiusMap = 78.f;
+inline constexpr int CampfireBurnDamage = 8;
+inline constexpr float CampfireBurnInterval = 0.75f;
+
+// Drops de enemigos (botiquines y armas)
+inline constexpr int MedkitDropChancePercent = 35;
+inline constexpr int WeaponDropChancePercent = 15;
+inline constexpr int MedkitHealAmount = 45;
+inline constexpr float MedkitPickupRadius = 52.f;
+
+inline constexpr ArenaLayout FirstArena{350.f, 1950.f, 950.f, 1650.f, 3};
+inline constexpr ArenaLayout SecondArena{2150.f, 3850.f, 2800.f, 3550.f, 4};
+inline constexpr ArenaLayout ThirdArena{4050.f, 5750.f, 4700.f, 5450.f, 5};
+
+inline constexpr float BodyHalfWidth = 28.f;
+inline constexpr float PlayerBulletSpawnOffsetX = 38.f;
+inline constexpr float PlayerBulletSpawnOffsetY = -74.f;
+inline constexpr float PlayerBulletSpeed = 700.f;
+inline const sf::Color PlayerBulletColor(250, 210, 80);
+}
 namespace LevelState
 {
 inline constexpr float CameraFollowSpeed = 5.f;

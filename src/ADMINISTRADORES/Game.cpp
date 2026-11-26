@@ -2,6 +2,7 @@
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
 #include "levels/Level_present/level2.hpp"
+#include "levels/FutureLevel1.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
@@ -103,19 +104,7 @@ bool Game::startLevel(LevelEra era, int number)
     if (!selectEra(era))
         return false;
 
-    // Por ahora solo tenemos conectados estos dos escenarios.
-    if (era == LevelEra::Past && number == 1)
-    {
-        pushState(std::make_unique<Level1>(window.get(), this));
-        return true;
-    }
-
-    if (era == LevelEra::Present && number == 1)
-    {
-        pushState(std::make_unique<Level2>(window.get(), this));
-        return true;
-    }
-
+    // Los niveles disponibles se conectan explícitamente aquí.
     if (era == LevelEra::Past && number == 1)
     {
         lastPlayedEra = era;
@@ -129,6 +118,14 @@ bool Game::startLevel(LevelEra era, int number)
         lastPlayedEra = era;
         lastPlayedLevelNumber = number;
         pushState(std::make_unique<Level2>(window.get(), this));
+        return true;
+    }
+
+    if (era == LevelEra::Future && number == 1)
+    {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
+        pushState(std::make_unique<FutureLevel1>(window.get(), this));
         return true;
     }
 
