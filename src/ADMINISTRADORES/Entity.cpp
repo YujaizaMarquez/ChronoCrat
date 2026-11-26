@@ -52,6 +52,37 @@ bool Entity::loadFromJson(const std::string& jsonPath) {
     }
 }
 
+bool Entity::loadSpriteSheet(
+    const std::string& texturePath,
+    int frameWidth,
+    int frameHeight) {
+    if (!texture.loadFromFile(texturePath)) {
+        std::cerr << "[Entity] Error al cargar textura: " << texturePath << "\n";
+        return false;
+    }
+
+    if (frameWidth > 0 && frameHeight > 0) {
+        anim.setFrameSize(frameWidth, frameHeight);
+    }
+
+    sprite.setTexture(texture, true);
+    anim.attachSprite(sprite);
+    return true;
+}
+
+void Entity::addAnimationClip(
+    const std::string& name,
+    int row,
+    int frames,
+    float duration,
+    bool loop) {
+    anim.addClip(name, row, frames, duration, loop);
+}
+
+bool Entity::isAnimationFinished() const {
+    return anim.isFinished();
+}
+
 void Entity::move(const sf::Vector2f& direction, float dt) {
     if (direction.x != 0.f || direction.y != 0.f) {
         position.x += direction.x * speed * dt;
@@ -82,6 +113,10 @@ void Entity::setVisualScale(float scale) {
 
 void Entity::playAnimation(const std::string& clipName, bool forceRestart) {
     anim.play(clipName, forceRestart);
+}
+
+void Entity::setAnimationFrame(int frame) {
+    anim.setCurrentFrame(frame);
 }
 
 void Entity::update(float dt) {

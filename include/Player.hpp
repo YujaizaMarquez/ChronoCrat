@@ -20,6 +20,18 @@ private:
     float attackCooldown;
     float attackTimer;
     bool attackingThisFrame;
+    bool attackKeyWasPressed = false;
+    int attackFrameIndex = -1;
+    bool attackAnimationActive = false;
+    bool deathAnimationStarted = false;
+    bool spriteAnimationsConfigured = false;
+    bool wearingMask = false;
+    std::string walkSpriteSheet;
+    std::string maskedWalkSpriteSheet;
+    std::string attackSpriteSheet;
+    std::string deathSpriteSheet;
+
+    static constexpr int AttackFrameCount = 5;
 
     Inventory inventory;
     std::size_t selectedInventorySlot = 0;
@@ -33,6 +45,12 @@ public:
     ~Player() override = default;
     
     void handleInput(float deltaTime);
+    void configureSpriteAnimations(
+        const std::string& walkPath,
+        const std::string& maskedWalkPath,
+        const std::string& attackPath,
+        const std::string& deathPath);
+    void setWearingMask(bool wearing);
     void update(float deltaTime) override;
     void update(float deltaTime, bool inputEnabled);
 
