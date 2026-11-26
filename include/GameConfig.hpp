@@ -153,7 +153,7 @@ struct ArenaLayout
     std::size_t soldierCount;
 };
 
-inline constexpr char BackgroundPath[] = "assets/era1/guerra/jjj.png";
+inline constexpr char BackgroundPath[] = "assets/era1/guerra/germany1945.png";
 inline constexpr float MapImageWidth = 6400.f;
 inline constexpr float MapImageHeight = 704.f;
 inline constexpr float PlayerStartMapX = 150.f;
