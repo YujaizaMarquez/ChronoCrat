@@ -3,6 +3,7 @@
 #include "GameConfig.hpp"
 #include "Robot.hpp"
 #include "item/Weapon.hpp"
+#include "item/Medkit.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -124,10 +125,10 @@ FutureLevel1::FutureLevel1(sf::RenderWindow* window, Game* game)
         GameConfig::FutureLevel1::PlayerAttackRange,
         GameConfig::FutureLevel1::PlayerAttackCooldown);
 
-    campfirePosition = {
-        GameConfig::FutureLevel1::CampfireMapX * scale,
-        GameConfig::FutureLevel1::CampfireMapY * scale
-    };
+    for (const auto& vent : GameConfig::FutureLevel1::RadioactiveVentPositions)
+    {
+        radioactiveVents.append({vent.mapX * scale, vent.mapY * scale});
+    }
     previousPlayerHp = player.getHp();
 
     auto starterWeapon = std::make_unique<Weapon>();
@@ -151,29 +152,31 @@ sf::Vector2f FutureLevel1::getPlayerPosition() const
 void FutureLevel1::handleLevelEvent(sf::Event& event)
 {
     const auto* keyPressed = event.getIf<sf::Event::KeyPressed>();
-    if (keyPressed == nullptr)
+    if (keyPressed == nullptr || playerDefeated)
     {
         return;
     }
 
-    if (keyPressed->code == sf::Keyboard::Key::Escape && game != nullptr)
+    if (keyPressed->code == sf::Keyboard::Key::F)
     {
-        game->popState();
+        player.useMedkit();
         return;
     }
 
     if (keyPressed->code != sf::Keyboard::Key::E ||
-        !player.getInventory().hasSpace() ||
-        playerDefeated)
+        !player.getInventory().hasSpace())
     {
         return;
     }
 
     for (std::size_t i = 0; i < worldWeapons.size(); ++i)
     {
-        worldWeapons[i]->tryPickup(
-            player.getPosition(),
-            GameConfig::FutureLevel1::WeaponPickupRadius);
+        if (worldWeapons[i]->tryPickup(
+                player.getPosition(),
+                GameConfig::FutureLevel1::WeaponPickupRadius))
+        {
+            break;
+        }
     }
 }
 
@@ -208,9 +211,10 @@ void FutureLevel1::updateLevel(
     player.update(deltaTime, !playerDefeated);
     clampToWalkableArea(player, activeArenaBounds);
 
-    if (player.isDead())
+    if (player.isDead() && !playerDefeated)
     {
         playerDefeated = true;
+        triggerDefeat();
     }
 
     updateWorldWeapons(deltaTime);
@@ -263,11 +267,18 @@ void FutureLevel1::updateLevel(
             clampToWalkableArea(enemy, activeArenaBounds);
         }
 
+        if (!playerDefeated)
+        {
+            player.attackTarget(enemy);
+        }
+
         if (enemy.isDead())
         {
+            player.addExp(GameConfig::Robot::ExperienceReward);
             spawnEnemyDrop(enemy.getPosition());
             enemies.remove_pos_closing_breach(index);
         }
+
         else
         {
             ++index;
@@ -275,31 +286,38 @@ void FutureLevel1::updateLevel(
     }
 
     updatePlayerBullets(deltaTime);
-    updateCampfire(deltaTime);
-    updateMedkits(deltaTime);
+
+    const int hpBeforeSteam = player.getHp();
+    updateRadioactiveVents(deltaTime);
+    const bool damagedBySteam = player.getHp() < hpBeforeSteam;
 
     if (player.getHp() < previousPlayerHp)
     {
+        damageFlashColor = damagedBySteam
+            ? sf::Color(90, 230, 70)
+            : sf::Color(220, 30, 30);
         damageFlashTimer = 0.22f;
     }
+
     previousPlayerHp = player.getHp();
     damageFlashTimer = std::max(0.f, damageFlashTimer - deltaTime);
 
     if (activeEncounterIndex >= 0 && enemies.is_empty())
     {
+        enteringEnemies.clear();
         completeEncounter(activeEncounterIndex);
         activeEncounterIndex = -1;
         if (areAllEncountersCompleted() && !levelCompleted)
         {
-            levelCompleted = completeLevelProgress();
+            levelCompleted = true;
+            triggerVictory();
         }
     }
 }
 
 void FutureLevel1::drawWorld()
 {
-    drawCampfire();
-    drawMedkits();
+    drawRadioactiveVents();
 
     for (std::size_t i = 0; i < worldWeapons.size(); ++i)
     {
@@ -406,7 +424,11 @@ void FutureLevel1::drawHud()
             static_cast<float>(windowSize.x),
             static_cast<float>(windowSize.y)
         });
-        flash.setFillColor(sf::Color(220, 30, 30, alpha));
+        flash.setFillColor(sf::Color(
+            damageFlashColor.r,
+            damageFlashColor.g,
+            damageFlashColor.b,
+            alpha));
         window->draw(flash);
     }
 }
@@ -640,38 +662,47 @@ void FutureLevel1::clampToWalkableArea(
     });
 }
 
-void FutureLevel1::updateCampfire(float deltaTime)
+void FutureLevel1::updateRadioactiveVents(float deltaTime)
 {
-    campfireAnimTime += deltaTime;
-    campfireBurnTimer = std::max(0.f, campfireBurnTimer - deltaTime);
+    steamAnimTime += deltaTime;
+    steamDamageTimer = std::max(0.f, steamDamageTimer - deltaTime);
 
     const float scale = getWorldScale(window);
-    const float burnRadius =
-        GameConfig::FutureLevel1::CampfireBurnRadiusMap * scale;
+    const float radiusX =
+        GameConfig::FutureLevel1::SteamHazardRadiusXMap * scale;
+    const float radiusY =
+        GameConfig::FutureLevel1::SteamHazardRadiusYMap * scale;
 
-    if (!playerDefeated)
+    if (!playerDefeated && steamDamageTimer <= 0.f)
     {
-        const sf::Vector2f diff = player.getPosition() - campfirePosition;
-        const float distSq = diff.x * diff.x + diff.y * diff.y;
-        if (distSq <= burnRadius * burnRadius && campfireBurnTimer <= 0.f)
+        for (std::size_t i = 0; i < radioactiveVents.size(); ++i)
         {
-            player.setHp(std::max(
-                0,
-                player.getHp() - GameConfig::FutureLevel1::CampfireBurnDamage));
-            campfireBurnTimer = GameConfig::FutureLevel1::CampfireBurnInterval;
+            const sf::Vector2f diff = player.getPosition() - radioactiveVents[i];
+            const float normX = diff.x / radiusX;
+            const float normY = diff.y / radiusY;
+            if (normX * normX + normY * normY <= 1.f)
+            {
+                player.setHp(std::max(
+                    0,
+                    player.getHp() - GameConfig::FutureLevel1::SteamDamage));
+                steamDamageTimer = GameConfig::FutureLevel1::SteamDamageInterval;
+                break;
+            }
         }
     }
 
-    for (std::size_t i = 0; i < fireEmbers.size();)
+    for (std::size_t i = 0; i < steamParticles.size();)
     {
-        fireEmbers[i].life += deltaTime;
-        fireEmbers[i].offset.y += fireEmbers[i].velocityY * deltaTime;
-        fireEmbers[i].offset.x +=
-            std::sin(campfireAnimTime * 5.f + static_cast<float>(i)) * 12.f * deltaTime;
+        SteamParticle& p = steamParticles[i];
+        p.life += deltaTime;
+        p.offset.y += p.velocityY * deltaTime;
+        p.offset.x += (p.velocityX +
+                       std::sin(steamAnimTime * 3.5f + p.phase) * 14.f * scale) *
+                      deltaTime;
 
-        if (fireEmbers[i].life >= fireEmbers[i].maxLife)
+        if (p.life >= p.maxLife)
         {
-            fireEmbers.remove_pos(i);
+            steamParticles.remove_pos(i);
         }
         else
         {
@@ -679,71 +710,81 @@ void FutureLevel1::updateCampfire(float deltaTime)
         }
     }
 
-    if (fireEmbers.size() < 8)
+    const std::size_t maxParticles = radioactiveVents.size() * 10;
+    if (steamParticles.size() < maxParticles && !radioactiveVents.is_empty())
     {
-        const float phase = std::sin(campfireAnimTime * 17.3f +
-                                     static_cast<float>(fireEmbers.size()) * 2.1f);
-        fireEmbers.append(FireEmber{
-            {phase * 14.f * scale, -8.f * scale},
-            -(35.f + std::abs(phase) * 30.f) * scale,
+        const std::size_t ventIndex = steamParticles.size() % radioactiveVents.size();
+        const float seed =
+            steamAnimTime * 19.7f + static_cast<float>(steamParticles.size()) * 2.3f;
+        const float spread = std::sin(seed);
+        const float variation = std::abs(std::cos(seed * 1.3f));
+
+        steamParticles.append(SteamParticle{
+            radioactiveVents[ventIndex],
+            {spread * 28.f * scale, -4.f * scale},
+            spread * 10.f * scale,
+            -(42.f + variation * 36.f) * scale,
+            (10.f + variation * 8.f) * scale,
             0.f,
-            0.7f + std::abs(phase) * 0.5f
+            1.1f + variation * 0.7f,
+            seed
         });
     }
 }
 
-void FutureLevel1::drawCampfire()
+void FutureLevel1::drawRadioactiveVents()
 {
     const float scale = getWorldScale(window);
-    const float flicker = std::sin(campfireAnimTime * 14.f) * 0.12f +
-                          std::cos(campfireAnimTime * 23.f) * 0.08f;
 
-    const float glowRadius = (46.f + flicker * 20.f) * scale;
-    sf::CircleShape glow(glowRadius);
-    glow.setOrigin({glowRadius, glowRadius * 0.6f});
-    glow.setScale({1.f, 0.55f});
-    glow.setPosition({campfirePosition.x, campfirePosition.y + 4.f * scale});
-    glow.setFillColor(sf::Color(255, 130, 30, 55));
-    window->draw(glow);
-
-    const auto drawFlame = [&](float width, float height, float sway, const sf::Color& color)
+    for (std::size_t i = 0; i < radioactiveVents.size(); ++i)
     {
-        sf::ConvexShape flame(3);
-        flame.setPoint(0, {campfirePosition.x - width * 0.5f, campfirePosition.y});
-        flame.setPoint(1, {campfirePosition.x + width * 0.5f, campfirePosition.y});
-        flame.setPoint(2, {campfirePosition.x + sway, campfirePosition.y - height});
-        flame.setFillColor(color);
-        window->draw(flame);
-    };
+        const sf::Vector2f& pos = radioactiveVents[i];
+        const float pulse =
+            0.5f + 0.5f * std::sin(steamAnimTime * 4.5f + static_cast<float>(i) * 1.7f);
 
-    drawFlame(
-        34.f * scale,
-        (40.f + flicker * 26.f) * scale,
-        std::sin(campfireAnimTime * 11.f) * 6.f * scale,
-        sf::Color(235, 80, 20, 205));
-    drawFlame(
-        24.f * scale,
-        (30.f - flicker * 18.f) * scale,
-        std::cos(campfireAnimTime * 15.f) * 5.f * scale,
-        sf::Color(255, 165, 35, 225));
-    drawFlame(
-        13.f * scale,
-        (18.f + flicker * 12.f) * scale,
-        std::sin(campfireAnimTime * 19.f) * 3.f * scale,
-        sf::Color(255, 240, 150, 240));
+        const float outerRadius = (56.f + pulse * 10.f) * scale;
+        sf::CircleShape outerGlow(outerRadius);
+        outerGlow.setOrigin({outerRadius, outerRadius});
+        outerGlow.setScale({1.f, 0.36f});
+        outerGlow.setPosition(pos);
+        outerGlow.setFillColor(sf::Color(
+            90,
+            235,
+            65,
+            static_cast<std::uint8_t>(45.f + pulse * 30.f)));
+        window->draw(outerGlow);
 
-    for (std::size_t i = 0; i < fireEmbers.size(); ++i)
-    {
-        const FireEmber& ember = fireEmbers[i];
-        const float alphaRatio = 1.f - (ember.life / ember.maxLife);
-        sf::CircleShape spark(2.2f * scale);
-        spark.setPosition(campfirePosition + ember.offset);
-        spark.setFillColor(sf::Color(
+        const float innerRadius = (32.f + pulse * 6.f) * scale;
+        sf::CircleShape innerGlow(innerRadius);
+        innerGlow.setOrigin({innerRadius, innerRadius});
+        innerGlow.setScale({1.f, 0.35f});
+        innerGlow.setPosition(pos);
+        innerGlow.setFillColor(sf::Color(
+            175,
             255,
-            200,
-            70,
-            static_cast<std::uint8_t>(std::clamp(alphaRatio, 0.f, 1.f) * 230.f)));
-        window->draw(spark);
+            110,
+            static_cast<std::uint8_t>(65.f + pulse * 35.f)));
+        window->draw(innerGlow);
+    }
+
+    for (std::size_t i = 0; i < steamParticles.size(); ++i)
+    {
+        const SteamParticle& p = steamParticles[i];
+        const float progress = std::clamp(p.life / p.maxLife, 0.f, 1.f);
+        const float fadeIn = std::min(1.f, progress / 0.18f);
+        const float fadeOut = 1.f - progress;
+        const float alpha = fadeIn * fadeOut * 145.f;
+        const float radius = p.baseRadius * (0.75f + progress * 1.25f);
+
+        sf::CircleShape puff(radius);
+        puff.setOrigin({radius, radius});
+        puff.setPosition(p.origin + p.offset);
+        puff.setFillColor(sf::Color(
+            static_cast<std::uint8_t>(145.f - progress * 65.f),
+            static_cast<std::uint8_t>(245.f - progress * 55.f),
+            static_cast<std::uint8_t>(90.f - progress * 25.f),
+            static_cast<std::uint8_t>(std::clamp(alpha, 0.f, 255.f))));
+        window->draw(puff);
     }
 }
 
@@ -754,74 +795,19 @@ void FutureLevel1::spawnEnemyDrop(const sf::Vector2f& position)
     const int roll = rollDist(rng);
 
     if (roll <= GameConfig::FutureLevel1::MedkitDropChancePercent)
-    {
-        medkits.append(MedkitDrop{position, 0.f});
-        return;
-    }
+        {
+            auto droppedMedkit = std::make_unique<Medkit>();
+            droppedMedkit->setPosition(position);
+            worldWeapons.append(std::move(droppedMedkit));
+            return;
+        }
 
     if (roll <= GameConfig::FutureLevel1::MedkitDropChancePercent +
                     GameConfig::FutureLevel1::WeaponDropChancePercent)
-    {
-        auto droppedWeapon = std::make_unique<Weapon>();
-        droppedWeapon->setPosition(position);
-        worldWeapons.append(std::move(droppedWeapon));
-    }
-}
-
-void FutureLevel1::updateMedkits(float deltaTime)
-{
-    const float pickupRadiusSq =
-        GameConfig::FutureLevel1::MedkitPickupRadius *
-        GameConfig::FutureLevel1::MedkitPickupRadius;
-
-    for (std::size_t i = 0; i < medkits.size();)
-    {
-        medkits[i].animTime += deltaTime;
-
-        const sf::Vector2f diff = player.getPosition() - medkits[i].position;
-        const float distSq = diff.x * diff.x + diff.y * diff.y;
-
-        if (!playerDefeated &&
-            distSq <= pickupRadiusSq &&
-            player.getHp() < player.getMaxHp())
         {
-            player.setHp(std::min(
-                player.getMaxHp(),
-                player.getHp() + GameConfig::FutureLevel1::MedkitHealAmount));
-            medkits.remove_pos(i);
+            auto droppedWeapon = std::make_unique<Weapon>();
+            droppedWeapon->setPosition(position);
+            worldWeapons.append(std::move(droppedWeapon));
         }
-        else
-        {
-            ++i;
-        }
-    }
-}
-
-void FutureLevel1::drawMedkits()
-{
-    for (std::size_t i = 0; i < medkits.size(); ++i)
-    {
-        const float bob = std::sin(medkits[i].animTime * 4.f) * 4.f;
-        const sf::Vector2f pos(medkits[i].position.x, medkits[i].position.y - 16.f + bob);
-
-        sf::RectangleShape box({26.f, 20.f});
-        box.setOrigin({13.f, 10.f});
-        box.setPosition(pos);
-        box.setFillColor(sf::Color(240, 240, 240));
-        box.setOutlineColor(sf::Color(50, 50, 50));
-        box.setOutlineThickness(2.f);
-        window->draw(box);
-
-        sf::RectangleShape crossH({12.f, 4.f});
-        crossH.setOrigin({6.f, 2.f});
-        crossH.setPosition(pos);
-        crossH.setFillColor(sf::Color(210, 40, 40));
-        window->draw(crossH);
-
-        sf::RectangleShape crossV({4.f, 12.f});
-        crossV.setOrigin({2.f, 6.f});
-        crossV.setPosition(pos);
-        crossV.setFillColor(sf::Color(210, 40, 40));
-        window->draw(crossV);
-    }
+    
 }

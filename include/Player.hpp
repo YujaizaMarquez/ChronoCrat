@@ -77,6 +77,7 @@ public:
     const Inventory& getInventory() const;
     Weapon* getEquippedWeapon();
     const Weapon* getEquippedWeapon() const;
+    bool useMedkit();
     const Designar::DynArray<std::string>& getSavedInventoryIds() const;
 
     void addDefeatedBoss(const std::string& bossId);

@@ -1,5 +1,7 @@
 #include "Player.hpp"
 #include "item/Weapon.hpp"
+#include "item/Medkit.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -354,6 +356,49 @@ const Weapon* Player::getEquippedWeapon() const
     const Weapon* weapon =
         dynamic_cast<const Weapon*>(inventory.get(selectedInventorySlot));
     return weapon != nullptr && weapon->isEquipped() ? weapon : nullptr;
+}
+
+bool Player::useMedkit()
+{
+    if (isDead() || getHp() >= getMaxHp())
+    {
+        return false;
+    }
+
+    std::size_t targetSlot = inventory.capacity();
+    if (Item* selected = inventory.get(selectedInventorySlot);
+        selected != nullptr && selected->getType() == ItemType::HealthPotion)
+    {
+        targetSlot = selectedInventorySlot;
+    }
+    else
+    {
+        for (std::size_t index = 0; index < inventory.capacity(); ++index)
+        {
+            Item* item = inventory.get(index);
+            if (item != nullptr && item->getType() == ItemType::HealthPotion)
+            {
+                targetSlot = index;
+                break;
+            }
+        }
+    }
+
+    if (targetSlot >= inventory.capacity())
+    {
+        return false;
+    }
+
+    Medkit* medkit = dynamic_cast<Medkit*>(inventory.get(targetSlot));
+    const int healAmount = medkit != nullptr
+        ? medkit->getHealAmount()
+        : GameConfig::Medkit::HealAmount;
+
+    inventory.get(targetSlot)->use();
+    setHp(std::min(getMaxHp(), getHp() + healAmount));
+    inventory.removeAt(targetSlot);
+    updateEquippedInventoryItem();
+    return true;
 }
 
 const Designar::DynArray<std::string>& Player::getSavedInventoryIds() const
