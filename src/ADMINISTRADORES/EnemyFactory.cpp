@@ -1,5 +1,6 @@
 #include "EnemyFactory.hpp"
-#include "Scientist.hpp"
+#include "Serpent.hpp"
+#include "levels/Level_present/Scientist.hpp"
 #include "Soldier.hpp"
 #include "Robot.hpp"
 #include <stdexcept>
@@ -10,12 +11,17 @@ EnemyFactory::EnemyFactory()
     registerEnemyType("soldier", [] {
         return std::make_unique<Soldier>();
     });
-    registerEnemyType("robot", [] {
-        return std::make_unique<Robot>();
-    });
 
     registerEnemyType("cientifico1", [] {
         return std::make_unique<Scientist>();
+    });
+
+    registerEnemyType("serpiente_murcielago", [] {
+        return std::make_unique<Serpent>();
+    });
+
+    registerEnemyType("robot", [] {
+        return std::make_unique<Robot>();
     });
 }
 

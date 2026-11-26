@@ -1,8 +1,8 @@
 #include "Game.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
+#include "levels/Level_present/level2.hpp"
 #include "levels/FutureLevel1.hpp"
-#include "levels/Level2.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
@@ -104,6 +104,7 @@ bool Game::startLevel(LevelEra era, int number)
     if (!selectEra(era))
         return false;
 
+    // Los niveles disponibles se conectan explícitamente aquí.
     if (era == LevelEra::Past && number == 1)
     {
         lastPlayedEra = era;

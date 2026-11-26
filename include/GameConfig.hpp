@@ -162,7 +162,7 @@ struct ArenaLayout
     std::size_t soldierCount;
 };
 
-inline constexpr char BackgroundPath[] = "assets/era1/guerra/jjj.png";
+inline constexpr char BackgroundPath[] = "assets/era1/guerra/germany1945.png";
 inline constexpr float MapImageWidth = 6400.f;
 inline constexpr float MapImageHeight = 704.f;
 inline constexpr float PlayerStartMapX = 150.f;
@@ -252,8 +252,30 @@ namespace Level2
     inline constexpr float FirstWaveSpawnY = 900.f;
 
     inline constexpr float PlayerStartMapX = 300.f;
+
     inline constexpr float PlayerStartMapY = 900.f;
     inline constexpr float PlayerVisualScale = 2.5f;
+    inline constexpr char PlayerWalkSpritePath[] =
+        "assets/level_pandemia/caminar.png";
+    inline constexpr char PlayerMaskedWalkSpritePath[] =
+        "assets/level_pandemia/caminar_tapabocas.png";
+    inline constexpr char PlayerAttackSpritePath[] =
+        "assets/level_pandemia/ataque_golpes.png";
+    inline constexpr char PlayerDeathSpritePath[] =
+        "assets/level_pandemia/morir.png";
+    inline constexpr float TapabocasMapX = 1038.f;
+    inline constexpr float TapabocasMapY = 866.f;
+    inline constexpr float TapabocasEquipRadius = 90.f;
+    inline constexpr char SerpentAttackSpritePath[] =
+        "assets/level_pandemia/serpiente_murcielago_ataque.png";
+    inline constexpr float SerpentMapX = MapImageWidth - 200.f;
+    inline constexpr float SerpentMapY = 900.f;
+    inline constexpr float SerpentVisualScale = 2.5f;
+    inline constexpr float SerpentDetectionRange = 700.f;
+    inline constexpr float SerpentAttackRange = 110.f;
+    inline constexpr int SerpentAttackDamage = 20;
+    inline constexpr float SerpentAttackCooldown = 1.f;
+    inline constexpr float MaskDuration = 5.f;
     inline constexpr int PlayerAttackDamage = 20;
     inline constexpr float PlayerAttackRange = 80.f;
     inline constexpr float PlayerAttackCooldown = 0.35f;
