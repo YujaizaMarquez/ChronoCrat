@@ -331,6 +331,38 @@ inline constexpr int ExperienceReward = 65;
 inline const sf::Color LaserColor(60, 230, 255);
 }
 
+namespace Infected
+{
+inline constexpr char BiterDataPath[] = "data/mordedor.json";
+inline constexpr float BiterDetectionRange = 900.f;
+inline constexpr float BiterAttackRange = 68.f;
+inline constexpr int BiterAttackDamage = 10;
+inline constexpr float BiterAttackCooldown = 0.85f;
+inline constexpr int BiterExperienceReward = 25;
+
+inline constexpr char MacheteDataPath[] = "data/machetero.json";
+inline constexpr float MacheteDetectionRange = 950.f;
+inline constexpr float MacheteAttackRange = 88.f;
+inline constexpr int MacheteAttackDamage = 20;
+inline constexpr float MacheteAttackCooldown = 1.25f;
+inline constexpr int MacheteExperienceReward = 45;
+
+inline constexpr int MacheteFrenzyThresholdPercent = 40;
+inline constexpr int MacheteFrenzyDamage = 26;
+inline constexpr float MacheteFrenzyAttackCooldown = 0.78f;
+inline constexpr float MacheteFrenzySpeedMultiplier = 1.45f;
+
+inline constexpr float MacheteLungeMinRange = 105.f;
+inline constexpr float MacheteLungeMaxRange = 240.f;
+inline constexpr float MacheteLungeWindup = 0.34f;
+inline constexpr float MacheteLungeFrenzyWindup = 0.22f;
+inline constexpr float MacheteLungeDuration = 0.18f;
+inline constexpr float MacheteLungeSpeedMultiplier = 2.15f;
+inline constexpr float MacheteLungeFrenzySpeedMultiplier = 2.65f;
+inline constexpr float MacheteLungeCooldown = 3.0f;
+inline constexpr float MacheteLungeFrenzyCooldown = 1.75f;
+}
+
 namespace FutureLevel1
 {
 struct ArenaLayout
@@ -411,6 +443,118 @@ inline constexpr float PlayerBulletSpawnOffsetY = -74.f;
 inline constexpr float PlayerBulletSpeed = 700.f;
 inline const sf::Color PlayerBulletColor(250, 210, 80);
 }
+
+namespace FutureLevel2
+{
+struct ArenaLayout
+{
+    float minimumMapX;
+    float maximumMapX;
+    float spawnMinimumMapX;
+    float spawnMaximumMapX;
+    std::size_t biterCount;
+    std::size_t macheteCount;
+};
+
+struct MapPoint
+{
+    float mapX;
+    float mapY;
+};
+
+inline constexpr char BackgroundPath[] = "assets/futuro/fondo_post2.png";
+inline constexpr float MapImageWidth = 6400.f;
+inline constexpr float MapImageHeight = 704.f;
+
+inline constexpr float PlayerStartMapX = MapImageWidth * 0.035f;
+inline constexpr float PlayerStartMapY = MapImageHeight * 0.870f;
+inline constexpr float PlayerVisualScale = 2.5f;
+inline constexpr float EnemyVisualScale = 2.5f;
+inline constexpr int PlayerAttackDamage = 35;
+inline constexpr float PlayerAttackRange = 130.f;
+inline constexpr float PlayerAttackCooldown = 0.45f;
+inline constexpr float WeaponSpawnOffsetX = 70.f;
+inline constexpr float WeaponSpawnOffsetY = -8.f;
+inline constexpr float WeaponPickupRadius = 80.f;
+inline constexpr float EquippedWeaponFacingOffset = 18.f;
+inline constexpr float EquippedWeaponHeightOffset = -58.f;
+
+inline constexpr float WalkableMinimumMapY = MapImageHeight * 0.780f;
+inline constexpr float WalkableMaximumMapY = MapImageHeight * 0.960f;
+inline constexpr float EnemyMinimumSpawnMapY = MapImageHeight * 0.820f;
+inline constexpr float EnemyMaximumSpawnMapY = MapImageHeight * 0.930f;
+inline constexpr float EnemyEntryOffsetMapX = 120.f;
+inline constexpr float EnemyEntryArrivalDistance = 8.f;
+
+// Barricadas en el asfalto: frenan a infectados y jugador, pero permiten disparar por encima
+inline constexpr std::array<CollisionObstacle, 3> Barricades{{
+    {{MapImageWidth * 0.140f, MapImageHeight * 0.845f, MapImageWidth * 0.022f, MapImageHeight * 0.042f}, true, false},
+    {{MapImageWidth * 0.455f, MapImageHeight * 0.845f, MapImageWidth * 0.022f, MapImageHeight * 0.042f}, true, false},
+    {{MapImageWidth * 0.770f, MapImageHeight * 0.845f, MapImageWidth * 0.022f, MapImageHeight * 0.042f}, true, false}
+}};
+
+// Barriles explosivos (explotan al recibir 2 disparos y dañan en área)
+inline constexpr std::array<MapPoint, 4> ExplosiveBarrelPositions{{
+    {MapImageWidth * 0.205f, MapImageHeight * 0.900f},
+    {MapImageWidth * 0.545f, MapImageHeight * 0.828f},
+    {MapImageWidth * 0.815f, MapImageHeight * 0.825f},
+    {MapImageWidth * 0.895f, MapImageHeight * 0.915f}
+}};
+inline constexpr int BarrelMaxHp = 40;
+inline constexpr float BarrelHitHalfWidthMap = 22.f;
+inline constexpr float BarrelHitHeightMap = 62.f;
+inline constexpr float BarrelExplosionRadiusMap = 165.f;
+inline constexpr int BarrelEnemyDamage = 95;
+inline constexpr int BarrelPlayerDamage = 20;
+
+// Cables eléctricos por ciclos (apagado -> aviso con chispas -> descarga activa)
+inline constexpr std::array<MapPoint, 2> ElectricHazardPositions{{
+    {MapImageWidth * 0.515f, MapImageHeight * 0.905f},
+    {MapImageWidth * 0.840f, MapImageHeight * 0.895f}
+}};
+inline constexpr float ElectricRadiusXMap = MapImageWidth * 0.015f;
+inline constexpr float ElectricRadiusYMap = MapImageHeight * 0.036f;
+inline constexpr float ElectricOffDuration = 2.6f;
+inline constexpr float ElectricWarningDuration = 0.9f;
+inline constexpr float ElectricActiveDuration = 2.0f;
+inline constexpr int ElectricPlayerDamage = 12;
+inline constexpr int ElectricEnemyDamage = 16;
+inline constexpr float ElectricDamageInterval = 0.55f;
+
+// Sangrado/infección al recibir una mordida (se limpia al usar botiquín con F)
+inline constexpr float BleedDuration = 3.2f;
+inline constexpr float BleedTickInterval = 0.8f;
+inline constexpr int BleedDamagePerTick = 3;
+
+// Drops de enemigos
+inline constexpr int MedkitDropChancePercent = 40;
+inline constexpr int WeaponDropChancePercent = 18;
+
+// 3 arenas con combinaciones progresivas de mordedores y macheteros
+inline constexpr ArenaLayout FirstArena{
+    MapImageWidth * 0.060f, MapImageWidth * 0.335f,
+    MapImageWidth * 0.210f, MapImageWidth * 0.305f,
+    3, 1
+};
+inline constexpr ArenaLayout SecondArena{
+    MapImageWidth * 0.370f, MapImageWidth * 0.655f,
+    MapImageWidth * 0.535f, MapImageWidth * 0.630f,
+    4, 2
+};
+inline constexpr ArenaLayout ThirdArena{
+    MapImageWidth * 0.690f, MapImageWidth * 0.980f,
+    MapImageWidth * 0.855f, MapImageWidth * 0.955f,
+    5, 3
+};
+
+inline constexpr float BodyHalfWidth = 28.f;
+inline constexpr float FootHalfHeightMap = 10.f;
+inline constexpr float PlayerBulletSpawnOffsetX = 38.f;
+inline constexpr float PlayerBulletSpawnOffsetY = -74.f;
+inline constexpr float PlayerBulletSpeed = 700.f;
+inline const sf::Color PlayerBulletColor(250, 210, 80);
+}
+
 namespace LevelState
 {
 inline constexpr float CameraFollowSpeed = 5.f;

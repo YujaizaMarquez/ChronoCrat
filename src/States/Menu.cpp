@@ -188,7 +188,17 @@ void Menu::update(float deltaTime)
 // Procesar eventos
 void Menu::handleEvent(sf::Event& event)
 {
-    // Redimensionar ventana
+
+    if (event.getIf<sf::Event::KeyPressed>() != nullptr &&
+        game != nullptr &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y) &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::G) &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::K))
+    {
+        game->enableUnlockAllLevels();
+        return;
+    }
+
     if (const auto* resized =
         event.getIf<sf::Event::Resized>())
     {
@@ -275,4 +285,14 @@ void Menu::draw()
     window->draw(closeButton);
     window->draw(crossLine1);
     window->draw(crossLine2);
+
+    if (game != nullptr && game->areAllLevelsUnlocked())
+    {
+        sf::CircleShape cheatIndicator(10.f);
+        cheatIndicator.setPosition({18.f, 18.f});
+        cheatIndicator.setFillColor(sf::Color(255, 215, 60));
+        cheatIndicator.setOutlineThickness(2.f);
+        cheatIndicator.setOutlineColor(sf::Color::Black);
+        window->draw(cheatIndicator);
+    }
 }

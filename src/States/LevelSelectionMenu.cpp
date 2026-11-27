@@ -82,14 +82,14 @@ void LevelSelectionMenu::updateNodeColors()
     if (game == nullptr)
         return;
 
+    const bool allUnlocked = game->areAllLevelsUnlocked();
+
     const LevelEra erasList[] = {
         LevelEra::Past,
         LevelEra::Present,
         LevelEra::Future
     };
 
-    // El jefe final se habilita cuando se completan
-    // los tres jefes de las eras.
     if (game->getLevelTree().can_fight_final_boss())
         root.setFillColor(sf::Color::Green);
     else
@@ -99,21 +99,19 @@ void LevelSelectionMenu::updateNodeColors()
     {
         LevelEra era = erasList[i];
 
-        // Consultamos el siguiente nivel pendiente.
         const auto* nextLevel =
             game->getLevelTree().get_next_level(era);
 
-        // Nivel 1 disponible.
         bool level1Unlocked =
-            nextLevel != nullptr &&
-            nextLevel->get_key().number == 1;
+            allUnlocked ||
+            (nextLevel != nullptr &&
+             nextLevel->get_key().number == 1);
 
-        // Nivel 2 disponible.
         bool level2Unlocked =
-            nextLevel != nullptr &&
-            nextLevel->get_key().number == 2;
+            allUnlocked ||
+            (nextLevel != nullptr &&
+             nextLevel->get_key().number == 2);
 
-        // Jefe de era disponible.
         bool bossUnlocked =
             game->getLevelTree().can_fight_mini_boss(era);
 
@@ -122,12 +120,16 @@ void LevelSelectionMenu::updateNodeColors()
                 ? sf::Color::Green
                 : sf::Color(70, 70, 70)
         );
+        selectableLevels[i].setOutlineThickness(allUnlocked ? 2.5f : 0.f);
+        selectableLevels[i].setOutlineColor(sf::Color(255, 215, 60));
 
         lockedLevels[i].setFillColor(
             level2Unlocked
                 ? sf::Color::Green
                 : sf::Color(70, 70, 70)
         );
+        lockedLevels[i].setOutlineThickness(allUnlocked ? 2.5f : 0.f);
+        lockedLevels[i].setOutlineColor(sf::Color(255, 215, 60));
 
         eras[i].setFillColor(
             bossUnlocked
@@ -253,6 +255,17 @@ void LevelSelectionMenu::update(float deltaTime)
 
 void LevelSelectionMenu::handleEvent(sf::Event& event)
 {
+    if (event.getIf<sf::Event::KeyPressed>() != nullptr &&
+        game != nullptr &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y) &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::G) &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::K))
+    {
+        game->enableUnlockAllLevels();
+        updateNodeColors();
+        return;
+    }
+
     if (event.is<sf::Event::Resized>())
     {
         initializeTree();
@@ -352,5 +365,15 @@ void LevelSelectionMenu::draw()
         window->draw(eras[i]);
         window->draw(selectableLevels[i]);
         window->draw(lockedLevels[i]);
+    }
+    
+    if (game != nullptr && game->areAllLevelsUnlocked())
+    {
+        sf::CircleShape cheatIndicator(10.f);
+        cheatIndicator.setPosition({18.f, 18.f});
+        cheatIndicator.setFillColor(sf::Color(255, 215, 60));
+        cheatIndicator.setOutlineThickness(2.f);
+        cheatIndicator.setOutlineColor(sf::Color::Black);
+        window->draw(cheatIndicator);
     }
 }

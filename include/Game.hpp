@@ -13,6 +13,7 @@ class Game
         Designar::DynStack<std::unique_ptr<State>> states;
         LevelTree levelTree;
         bool hasActiveEra = false;
+        bool unlockAllLevels = false;
         LevelEra activeEra = LevelEra::Past;
         LevelEra lastPlayedEra = LevelEra::Past;
         int lastPlayedLevelNumber = 1;
@@ -28,6 +29,8 @@ class Game
     void retryCurrentLevel();
     void startNextLevel();
     bool startNewGame();
+    void enableUnlockAllLevels();
+    bool areAllLevelsUnlocked() const;
     bool startLevel(LevelEra era, int number);
     bool startMiniBoss(LevelEra era);
     bool startFinalBoss();

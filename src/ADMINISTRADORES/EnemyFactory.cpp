@@ -3,6 +3,7 @@
 #include "levels/Level_present/Scientist.hpp"
 #include "Soldier.hpp"
 #include "Robot.hpp"
+#include "Infected.hpp"
 #include <stdexcept>
 #include <utility>
 
@@ -22,6 +23,13 @@ EnemyFactory::EnemyFactory()
 
     registerEnemyType("robot", [] {
         return std::make_unique<Robot>();
+    });
+    registerEnemyType("mordedor", [] {
+        return std::make_unique<Infected>(Infected::Variant::Biter);
+    });
+
+    registerEnemyType("machetero", [] {
+        return std::make_unique<Infected>(Infected::Variant::Machete);
     });
 }
 

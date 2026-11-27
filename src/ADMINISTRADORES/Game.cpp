@@ -2,7 +2,8 @@
 #include "States/LevelSelectionMenu.hpp"
 #include "levels/Level1.hpp"
 #include "levels/Level_present/level2.hpp"
-#include "levels/FutureLevel1.hpp"
+#include "levels/Level_future/FutureLevel1.hpp"
+#include "levels/Level_future/FutureLevel2.hpp"
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
@@ -27,6 +28,16 @@ void Game::popState() {
     if (!states.is_empty()) {
         states.pop();
     }
+
+    if (!states.is_empty()) {
+        State* current = states.top().get();
+        if (dynamic_cast<Menu*>(current) != nullptr ||
+            dynamic_cast<LevelSelectionMenu*>(current) != nullptr)
+        {
+            unlockAllLevels = false;
+            hasActiveEra = false;
+        }
+    }
 }
 
 void Game::returnToMainMenu()
@@ -35,6 +46,7 @@ void Game::returnToMainMenu()
     {
         states.clear();
         hasActiveEra = false;
+        unlockAllLevels = false;
         pushState(std::make_unique<Menu>(window.get(), this));
     };
 }
@@ -43,30 +55,37 @@ void Game::retryCurrentLevel()
 {
     pendingTransition = [this]()
     {
+        const bool wasUnlocked = unlockAllLevels;
         // Quitar LevelResultState y el nivel actual
         popState();
         popState();
         hasActiveEra = false;
+        unlockAllLevels = wasUnlocked;
         startLevel(lastPlayedEra, lastPlayedLevelNumber);
     };
+
 }
 
 void Game::startNextLevel()
 {
     pendingTransition = [this]()
     {
+        const bool wasUnlocked = unlockAllLevels;
         // Quitar LevelResultState y el nivel completado (queda LevelSelectionMenu debajo)
         popState();
         popState();
         hasActiveEra = false;
+
+        if (wasUnlocked)
+        {
+            return;
+        }
 
         const auto* nextLevel = levelTree.get_next_level(lastPlayedEra);
         if (nextLevel != nullptr)
         {
             startLevel(lastPlayedEra, nextLevel->get_key().number);
         }
-        // Si el siguiente nivel aún no existe en startLevel() o ya toca minijefe,
-        // se queda en LevelSelectionMenu mostrando el nuevo nodo desbloqueado.
     };
 }
 
@@ -87,23 +106,43 @@ bool Game::startNewGame()
     return true;
 }
 
+void Game::enableUnlockAllLevels()
+{
+    unlockAllLevels = true;
+}
 
+bool Game::areAllLevelsUnlocked() const
+{
+    return unlockAllLevels;
+}
 
 bool Game::startLevel(LevelEra era, int number)
 {
-    // Comprobar que el nivel solicitado esté desbloqueado.
-    const auto* nextLevel = levelTree.get_next_level(era);
-
-    if (nextLevel == nullptr ||
-        nextLevel->get_key().number != number)
+    if (!unlockAllLevels)
     {
-        return false;
+        const auto* nextLevel = levelTree.get_next_level(era);
+        if (nextLevel == nullptr ||
+            nextLevel->get_key().number != number)
+        {
+            return false;
+        }
+
+        if (!selectEra(era))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (hasActiveEra)
+        {
+            return false;
+        }
+        activeEra = era;
+        hasActiveEra = true;
     }
 
-    // Seleccionar la era.
-    if (!selectEra(era))
-        return false;
-
+    // ... el resto de los if (era == ... && number == ...) queda igual
     // Los niveles disponibles se conectan explícitamente aquí.
     if (era == LevelEra::Past && number == 1)
     {
@@ -126,6 +165,14 @@ bool Game::startLevel(LevelEra era, int number)
         lastPlayedEra = era;
         lastPlayedLevelNumber = number;
         pushState(std::make_unique<FutureLevel1>(window.get(), this));
+        return true;
+    }
+
+    if (era == LevelEra::Future && number == 2)
+    {
+        lastPlayedEra = era;
+        lastPlayedLevelNumber = number;
+        pushState(std::make_unique<FutureLevel2>(window.get(), this));
         return true;
     }
 
@@ -179,11 +226,13 @@ bool Game::completeCurrentLevel()
     if (!hasActiveEra)
         return false;
 
-    if (!levelTree.complete_next_level(activeEra))
-        return false;
+    if (!unlockAllLevels)
+    {
+        if (!levelTree.complete_next_level(activeEra))
+            return false;
+    }
 
     hasActiveEra = false;
-
     return true;
 }
 
