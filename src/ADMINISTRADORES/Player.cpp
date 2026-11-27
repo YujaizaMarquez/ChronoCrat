@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <utility>
 
+PlayerUpgradeBonuses Player::activeUpgradeBonuses{};
+
 Player::Player() 
     :Entity(), 
     playerLevel(GameConfig::Player::InitialLevel),
@@ -20,6 +22,15 @@ Player::Player()
     if (!loadFromJson(GameConfig::Player::DataPath)) {
         std::cerr << "[ERROR] No se pudo cargar " << GameConfig::Player::DataPath
                   << " en Player\n";
+    }
+
+    if (activeUpgradeBonuses.bonusMaxHp > 0) {
+        setMaxHp(getMaxHp() + activeUpgradeBonuses.bonusMaxHp);
+        setHp(getMaxHp());
+    }
+
+    if (activeUpgradeBonuses.bonusSpeed > 0.f) {
+        setSpeed(getSpeed() + activeUpgradeBonuses.bonusSpeed);
     }
 }
 
@@ -464,4 +475,14 @@ void Player::importSaveData(const SaveData& data)
     for (size_t i = 0; i < data.defeatedBosses.size(); ++i) {
         defeatedBosses.append(data.defeatedBosses[i]);
     }
+}
+
+void Player::setActiveUpgradeBonuses(const PlayerUpgradeBonuses& bonuses)
+{
+    activeUpgradeBonuses = bonuses;
+}
+
+const PlayerUpgradeBonuses& Player::getActiveUpgradeBonuses()
+{
+    return activeUpgradeBonuses;
 }

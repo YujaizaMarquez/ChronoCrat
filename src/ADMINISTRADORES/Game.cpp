@@ -6,6 +6,8 @@
 #include "State.hpp"
 #include "States/Menu.hpp"
 #include <utility>
+#include "item/Weapon.hpp"
+#include "Player.hpp"
 
 Game::Game() 
 {
@@ -15,6 +17,10 @@ Game::Game()
         sf::State::Fullscreen);
     window->setFramerateLimit(GameConfig::Window::FrameRateLimit);
     states.push(std::make_unique<Menu>(window.get(), this));
+    weaponProgress[0].unlocked = true;
+    syncActiveWeaponLoadout();
+    syncActiveCharacterBonuses();
+
 }
 
 Game::~Game() {}
@@ -260,4 +266,212 @@ void Game::run()
             action();
         }
     }
+}
+
+void Game::syncActiveWeaponLoadout() const
+{
+    const auto& def = GameConfig::WeaponShop::Catalog[equippedWeaponIndex];
+    WeaponLoadout loadout;
+    loadout.imagePath = def.imagePath;
+    loadout.damage = static_cast<float>(getWeaponDamage(equippedWeaponIndex));
+    loadout.magazineCapacity = getWeaponMagazine(equippedWeaponIndex);
+    loadout.fireInterval = def.fireInterval;
+    Weapon::setActiveLoadout(loadout);
+}
+
+void Game::addUpgradeXp(int amount)
+{
+    if (amount > 0)
+    {
+        upgradeXp += amount;
+    }
+}
+
+int Game::getUpgradeXp() const
+{
+    return upgradeXp;
+}
+
+std::size_t Game::getEquippedWeaponIndex() const
+{
+    return equippedWeaponIndex;
+}
+
+const WeaponProgress& Game::getWeaponProgress(std::size_t index) const
+{
+    return weaponProgress[index];
+}
+
+int Game::getWeaponDamage(std::size_t index) const
+{
+    const auto& def = GameConfig::WeaponShop::Catalog[index];
+    return def.baseDamage + (weaponProgress[index].damageLevel - 1) * def.damagePerLevel;
+}
+
+int Game::getWeaponMagazine(std::size_t index) const
+{
+    const auto& def = GameConfig::WeaponShop::Catalog[index];
+    return def.baseMagazine + (weaponProgress[index].ammoLevel - 1) * def.magazinePerLevel;
+}
+
+int Game::getDamageUpgradeCost(std::size_t index) const
+{
+    const auto& def = GameConfig::WeaponShop::Catalog[index];
+    return def.baseDamageUpgradeCost +
+           (weaponProgress[index].damageLevel - 1) * def.damageUpgradeCostStep;
+}
+
+int Game::getAmmoUpgradeCost(std::size_t index) const
+{
+    const auto& def = GameConfig::WeaponShop::Catalog[index];
+    return def.baseAmmoUpgradeCost +
+           (weaponProgress[index].ammoLevel - 1) * def.ammoUpgradeCostStep;
+}
+
+bool Game::buyOrEquipWeapon(std::size_t index)
+{
+    if (index >= GameConfig::WeaponShop::CatalogSize)
+    {
+        return false;
+    }
+
+    if (!weaponProgress[index].unlocked)
+    {
+        const int cost = GameConfig::WeaponShop::Catalog[index].unlockCost;
+        if (upgradeXp < cost)
+        {
+            return false;
+        }
+        upgradeXp -= cost;
+        weaponProgress[index].unlocked = true;
+    }
+
+    equippedWeaponIndex = index;
+    syncActiveWeaponLoadout();
+    return true;
+}
+
+bool Game::upgradeWeaponDamage(std::size_t index)
+{
+    if (index >= GameConfig::WeaponShop::CatalogSize ||
+        !weaponProgress[index].unlocked ||
+        weaponProgress[index].damageLevel >= GameConfig::WeaponShop::MaxUpgradeLevel)
+    {
+        return false;
+    }
+
+    const int cost = getDamageUpgradeCost(index);
+    if (upgradeXp < cost)
+    {
+        return false;
+    }
+
+    upgradeXp -= cost;
+    ++weaponProgress[index].damageLevel;
+    if (index == equippedWeaponIndex)
+    {
+        syncActiveWeaponLoadout();
+    }
+    return true;
+}
+
+bool Game::upgradeWeaponAmmo(std::size_t index)
+{
+    if (index >= GameConfig::WeaponShop::CatalogSize ||
+        !weaponProgress[index].unlocked ||
+        weaponProgress[index].ammoLevel >= GameConfig::WeaponShop::MaxUpgradeLevel)
+    {
+        return false;
+    }
+
+    const int cost = getAmmoUpgradeCost(index);
+    if (upgradeXp < cost)
+    {
+        return false;
+    }
+
+    upgradeXp -= cost;
+    ++weaponProgress[index].ammoLevel;
+    if (index == equippedWeaponIndex)
+    {
+        syncActiveWeaponLoadout();
+    }
+    return true;
+}
+
+void Game::syncActiveCharacterBonuses() const
+{
+    PlayerUpgradeBonuses bonuses;
+    bonuses.bonusMaxHp = getBonusMaxHp();
+    bonuses.bonusSpeed = getBonusSpeed();
+    Player::setActiveUpgradeBonuses(bonuses);
+}
+
+const CharacterProgress& Game::getCharacterProgress() const
+{
+    return characterProgress;
+}
+
+int Game::getBonusMaxHp() const
+{
+    return (characterProgress.healthLevel - 1) *
+           GameConfig::CharacterUpgrades::BonusHpPerLevel;
+}
+
+float Game::getBonusSpeed() const
+{
+    return static_cast<float>(characterProgress.speedLevel - 1) *
+           GameConfig::CharacterUpgrades::BonusSpeedPerLevel;
+}
+
+int Game::getHealthUpgradeCost() const
+{
+    return GameConfig::CharacterUpgrades::BaseHpUpgradeCost +
+           (characterProgress.healthLevel - 1) *
+               GameConfig::CharacterUpgrades::HpUpgradeCostStep;
+}
+
+int Game::getSpeedUpgradeCost() const
+{
+    return GameConfig::CharacterUpgrades::BaseSpeedUpgradeCost +
+           (characterProgress.speedLevel - 1) *
+               GameConfig::CharacterUpgrades::SpeedUpgradeCostStep;
+}
+
+bool Game::upgradeCharacterHealth()
+{
+    if (characterProgress.healthLevel >= GameConfig::CharacterUpgrades::MaxUpgradeLevel)
+    {
+        return false;
+    }
+
+    const int cost = getHealthUpgradeCost();
+    if (upgradeXp < cost)
+    {
+        return false;
+    }
+
+    upgradeXp -= cost;
+    ++characterProgress.healthLevel;
+    syncActiveCharacterBonuses();
+    return true;
+}
+
+bool Game::upgradeCharacterSpeed()
+{
+    if (characterProgress.speedLevel >= GameConfig::CharacterUpgrades::MaxUpgradeLevel)
+    {
+        return false;
+    }
+
+    const int cost = getSpeedUpgradeCost();
+    if (upgradeXp < cost)
+    {
+        return false;
+    }
+
+    upgradeXp -= cost;
+    ++characterProgress.speedLevel;
+    syncActiveCharacterBonuses();
+    return true;
 }

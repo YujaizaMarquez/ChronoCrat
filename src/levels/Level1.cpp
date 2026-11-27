@@ -510,8 +510,7 @@ void Level1::drawAmmoCounter(int ammo)
         drawSegment(segments[digit][6], GameConfig::Level1::AmmoSegmentMiddle);
     };
 
-    const int clampedAmmo =
-        std::clamp(ammo, 0, GameConfig::Weapon::MagazineCapacity);
+   const int clampedAmmo = std::clamp(ammo, 0, 99);
     drawDigit(
         clampedAmmo / 10,
         {GameConfig::Level1::AmmoFirstDigitX, GameConfig::Level1::AmmoDigitY});

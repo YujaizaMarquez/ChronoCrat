@@ -169,3 +169,22 @@ void Entity::importSaveData(const SaveData& data) {
     setHp(data.currentHp);
     setPosition(data.position);
 }
+
+void Entity::setMaxHp(int newMaxHp)
+{
+    maxHp = newMaxHp > 1 ? newMaxHp : 1;
+    if (hp > maxHp)
+    {
+        hp = maxHp;
+    }
+}
+
+void Entity::setSpeed(float newSpeed)
+{
+    speed = newSpeed > 1.f ? newSpeed : 1.f;
+}
+
+float Entity::getSpeed() const
+{
+    return speed;
+}

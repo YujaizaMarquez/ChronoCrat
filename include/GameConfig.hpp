@@ -118,6 +118,74 @@ inline constexpr int MagazineCapacity = 30;
 inline constexpr float FireInterval = 0.18f;
 }
 
+namespace WeaponShop
+{
+struct WeaponDefinition
+{
+    const char* name;
+    const char* imagePath;
+    int unlockCost;
+    int baseDamage;
+    int damagePerLevel;
+    int baseMagazine;
+    int magazinePerLevel;
+    float fireInterval;
+    int baseDamageUpgradeCost;
+    int damageUpgradeCostStep;
+    int baseAmmoUpgradeCost;
+    int ammoUpgradeCostStep;
+};
+
+inline constexpr std::size_t CatalogSize = 3;
+inline constexpr int MaxUpgradeLevel = 5;
+inline constexpr int VictoryBonusXp = 50;
+
+inline constexpr std::array<WeaponDefinition, CatalogSize> Catalog{{
+    {
+        "MP40",
+        GameConfig::Weapon::Mp40ImagePath,
+        0,
+        25, 5,
+        30, 6,
+        0.18f,
+        80, 40,
+        60, 35
+    },
+    {
+        "RIFLE ASALTO",
+        GameConfig::Weapon::Mp40ImagePath,
+        250,
+        34, 6,
+        40, 8,
+        0.14f,
+        110, 45,
+        90, 40
+    },
+    {
+        "RIFLE PESADO",
+        GameConfig::Weapon::Mp40ImagePath,
+        550,
+        48, 8,
+        55, 10,
+        0.20f,
+        140, 55,
+        120, 50
+    }
+}};
+}
+
+namespace CharacterUpgrades
+{
+inline constexpr int MaxUpgradeLevel = 5;
+inline constexpr int BonusHpPerLevel = 30;
+inline constexpr int BaseHpUpgradeCost = 70;
+inline constexpr int HpUpgradeCostStep = 40;
+
+inline constexpr float BonusSpeedPerLevel = 20.f;
+inline constexpr int BaseSpeedUpgradeCost = 65;
+inline constexpr int SpeedUpgradeCostStep = 35;
+}
+
 namespace Medkit
 {
 inline constexpr char ImagePath[] = "";

@@ -2,20 +2,37 @@
 #include <algorithm>
 #include <stdexcept>
 
+WeaponLoadout Weapon::activeLoadout{};
+
 Weapon::Weapon(const std::string& imagePath)
     : Item(
           ItemType::Weapon,
           GameConfig::Weapon::Durability,
-          GameConfig::Weapon::Damage,
+          activeLoadout.damage,
           GameConfig::Weapon::Mp40ImageWidth,
-          GameConfig::Weapon::Mp40ImageHeight)
+          GameConfig::Weapon::Mp40ImageHeight),
+      ammo(activeLoadout.magazineCapacity),
+      fireInterval(activeLoadout.fireInterval)
 {
-    if (!loadSpriteSheet(imagePath, true))
+    const std::string resolvedPath =
+        imagePath.empty() ? activeLoadout.imagePath : imagePath;
+
+    if (!loadSpriteSheet(resolvedPath, true))
     {
-        throw std::runtime_error("No se pudo cargar la imagen del arma: " + imagePath);
+        throw std::runtime_error("No se pudo cargar la imagen del arma: " + resolvedPath);
     }
 
     setVisualScale(GameConfig::Weapon::Mp40VisualScale);
+}
+
+void Weapon::setActiveLoadout(const WeaponLoadout& loadout)
+{
+    activeLoadout = loadout;
+}
+
+const WeaponLoadout& Weapon::getActiveLoadout()
+{
+    return activeLoadout;
 }
 
 void Weapon::use()
@@ -47,7 +64,7 @@ bool Weapon::tryFire()
     }
 
     --ammo;
-    fireCooldownRemaining = GameConfig::Weapon::FireInterval;
+    fireCooldownRemaining = fireInterval;
     return true;
 }
 

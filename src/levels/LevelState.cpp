@@ -4,6 +4,7 @@
 #include "Player.hpp"
 #include "item/InventoryHud.hpp"
 #include "States/LevelResultState.hpp"
+#include "States/UpgradeMenuState.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -138,13 +139,22 @@ void LevelState::triggerVictory()
 
     completeLevelProgress();
     resultShown = true;
-    game->pushState(std::make_unique<LevelResultState>(
+
+    const Player& player = getPlayer();
+    const int levelXp =
+        (player.getPlayerLevel() - GameConfig::Player::InitialLevel) *
+            GameConfig::Player::ExperiencePerLevel +
+        player.getExp();
+    const int totalEarnedXp =
+        std::max(0, levelXp) + GameConfig::WeaponShop::VictoryBonusXp;
+
+    game->addUpgradeXp(totalEarnedXp);
+    game->pushState(std::make_unique<UpgradeMenuState>(
         window,
         game,
         *this,
-        LevelResultState::Result::Victory));
+        totalEarnedXp));
 }
-
 void LevelState::triggerDefeat()
 {
     if (resultShown || game == nullptr)

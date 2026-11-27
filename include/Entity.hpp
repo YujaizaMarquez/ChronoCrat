@@ -56,6 +56,9 @@ public:
     void setHp(int newHp);
     int getHp() const;
     int getMaxHp() const;
+    void setMaxHp(int newMaxHp);
+    void setSpeed(float newSpeed);
+    float getSpeed() const;
     const std::string& getId() const;
     SaveData exportSaveData(const std::string& currentEra, int levelId) const;
     void importSaveData(const SaveData& data);

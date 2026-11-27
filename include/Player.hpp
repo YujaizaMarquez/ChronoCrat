@@ -8,6 +8,12 @@
 
 class Weapon;
 
+struct PlayerUpgradeBonuses
+{
+    int bonusMaxHp = 0;
+    float bonusSpeed = 0.f;
+};
+
 class Player : public Entity
 {
 private:
@@ -39,6 +45,7 @@ private:
     Designar::DynArray<std::string> defeatedBosses;
 
     void updateEquippedInventoryItem();
+    static PlayerUpgradeBonuses activeUpgradeBonuses;
 
 public:
     Player();
@@ -86,4 +93,6 @@ public:
 
     SaveData exportSaveData(const std::string& currentEra, int levelId) const;
     void importSaveData(const SaveData& data);
+    static void setActiveUpgradeBonuses(const PlayerUpgradeBonuses& bonuses);
+    static const PlayerUpgradeBonuses& getActiveUpgradeBonuses();
 };
