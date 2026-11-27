@@ -450,4 +450,12 @@ inline constexpr ButtonLayout ExitButton{686.f, 772.f, 560.f, 92.f};
 inline const sf::Color CloseButtonColor(100, 35, 35, 220);
 inline const sf::Color CloseButtonHoverColor(200, 55, 55, 240);
 }
+
+namespace LevelMap
+{
+inline constexpr int FrameWidth = 1280;
+inline constexpr int FrameCount = 5;
+inline constexpr float FrameDuration = 0.22f;
+inline constexpr char BackgroundPath[] = "assets/fondo_menu.png";
+}
 }

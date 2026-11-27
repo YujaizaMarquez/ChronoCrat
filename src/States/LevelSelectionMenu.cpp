@@ -1,7 +1,10 @@
 
 #include "Game.hpp"
+#include "GameConfig.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 // ---------------------------------
 // Constructor
@@ -11,10 +14,50 @@ LevelSelectionMenu::LevelSelectionMenu(
     sf::RenderWindow* window,
     Game* game
 )
-    : State(window, game)
+    : State(window, game),
+      backgroundSprite(backgroundTexture)
 {
+    if (!backgroundTexture.loadFromFile(GameConfig::LevelMap::BackgroundPath))
+    {
+        throw std::runtime_error(
+            std::string("No se pudo cargar ") + GameConfig::LevelMap::BackgroundPath
+        );
+    }
+
+    const sf::Vector2u textureSize = backgroundTexture.getSize();
+    if (textureSize.x !=
+        GameConfig::LevelMap::FrameWidth * GameConfig::LevelMap::FrameCount)
+    {
+        throw std::runtime_error(
+            "El ancho del spritesheet del mapa debe ser exactamente " +
+            std::to_string(
+                GameConfig::LevelMap::FrameWidth *
+                GameConfig::LevelMap::FrameCount) +
+            " pixeles"
+        );
+    }
+
+    backgroundTexture.setSmooth(false);
+    backgroundSprite.setTextureRect(
+        sf::IntRect(
+            {0, 0},
+            {GameConfig::LevelMap::FrameWidth, static_cast<int>(textureSize.y)}
+        )
+    );
+    updateBackgroundScale();
     initializeTree();
     updateNodeColors();
+}
+
+void LevelSelectionMenu::updateBackgroundScale()
+{
+    const sf::Vector2u textureSize = backgroundTexture.getSize();
+    const sf::Vector2u windowSize = window->getSize();
+
+    backgroundSprite.setScale({
+        static_cast<float>(windowSize.x) / GameConfig::LevelMap::FrameWidth,
+        static_cast<float>(windowSize.y) / textureSize.y
+    });
 }
 
 // ---------------------------------
@@ -243,6 +286,25 @@ void LevelSelectionMenu::updateHover()
 
 void LevelSelectionMenu::update(float deltaTime)
 {
+    animationTimer += deltaTime;
+    while (animationTimer >= GameConfig::LevelMap::FrameDuration)
+    {
+        animationTimer -= GameConfig::LevelMap::FrameDuration;
+        currentFrame =
+            (currentFrame + 1) % GameConfig::LevelMap::FrameCount;
+
+        const sf::Vector2u textureSize = backgroundTexture.getSize();
+        backgroundSprite.setTextureRect(
+            sf::IntRect(
+                {currentFrame * GameConfig::LevelMap::FrameWidth, 0},
+                {
+                    GameConfig::LevelMap::FrameWidth,
+                    static_cast<int>(textureSize.y)
+                }
+            )
+        );
+    }
+
     updateNodeColors();
     updateHover();
 }
@@ -255,6 +317,7 @@ void LevelSelectionMenu::handleEvent(sf::Event& event)
 {
     if (event.is<sf::Event::Resized>())
     {
+        updateBackgroundScale();
         initializeTree();
         updateNodeColors();
         return;
@@ -322,6 +385,8 @@ void LevelSelectionMenu::handleEvent(sf::Event& event)
 
 void LevelSelectionMenu::draw()
 {
+    window->draw(backgroundSprite);
+
     // Conexiones de la raíz con los jefes.
     for (int i = 0; i < 3; i++)
     {

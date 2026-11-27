@@ -8,6 +8,11 @@
 class LevelSelectionMenu : public State
 {
 private:
+    sf::Texture backgroundTexture;
+    sf::Sprite backgroundSprite;
+    float animationTimer = 0.f;
+    int currentFrame = 0;
+
     // Raíz: jefe final.
     sf::CircleShape root;
 
@@ -24,6 +29,7 @@ private:
 
     int hoveredLevel = -1;
 
+    void updateBackgroundScale();
     void initializeTree();
     void updateHover();
     void updateNodeColors();
