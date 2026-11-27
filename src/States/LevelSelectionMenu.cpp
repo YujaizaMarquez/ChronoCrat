@@ -3,8 +3,37 @@
 #include "GameConfig.hpp"
 #include "States/LevelSelectionMenu.hpp"
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+
+namespace
+{
+const sf::Color UnavailableNodeColor(255, 105, 180);
+const sf::Color AvailableNodeColor(255, 220, 75);
+
+void drawNodeGlow(sf::RenderWindow& window, const sf::CircleShape& node)
+{
+    const sf::Vector2f scale = node.getScale();
+    const sf::Color color = node.getFillColor();
+    const float glowScales[] = {1.7f, 1.4f, 1.15f};
+    const std::uint8_t glowAlphas[] = {24, 38, 58};
+
+    for (std::size_t i = 0; i < 3; ++i)
+    {
+        sf::CircleShape glow = node;
+        sf::Color glowColor = color;
+        glowColor.a = glowAlphas[i];
+        glow.setFillColor(glowColor);
+        glow.setOutlineColor(sf::Color::Transparent);
+        glow.setScale({
+            scale.x * glowScales[i],
+            scale.y * glowScales[i]
+        });
+        window.draw(glow);
+    }
+}
+}
 
 // ---------------------------------
 // Constructor
@@ -134,9 +163,9 @@ void LevelSelectionMenu::updateNodeColors()
     // El jefe final se habilita cuando se completan
     // los tres jefes de las eras.
     if (game->getLevelTree().can_fight_final_boss())
-        root.setFillColor(sf::Color::Green);
+        root.setFillColor(AvailableNodeColor);
     else
-        root.setFillColor(sf::Color(70, 70, 70));
+        root.setFillColor(UnavailableNodeColor);
 
     for (int i = 0; i < 3; i++)
     {
@@ -162,21 +191,35 @@ void LevelSelectionMenu::updateNodeColors()
 
         selectableLevels[i].setFillColor(
             level1Unlocked
-                ? sf::Color::Green
-                : sf::Color(70, 70, 70)
+                ? AvailableNodeColor
+                : UnavailableNodeColor
         );
 
         lockedLevels[i].setFillColor(
             level2Unlocked
-                ? sf::Color::Green
-                : sf::Color(70, 70, 70)
+                ? AvailableNodeColor
+                : UnavailableNodeColor
         );
 
         eras[i].setFillColor(
             bossUnlocked
-                ? sf::Color::Green
-                : sf::Color(70, 70, 70)
+                ? AvailableNodeColor
+                : UnavailableNodeColor
         );
+    }
+}
+
+void LevelSelectionMenu::updateNodePulse()
+{
+    const float pulseScale = 1.f + 0.1f * std::sin(pulseTimer * 2.f);
+    const sf::Vector2f scale(pulseScale, pulseScale);
+
+    root.setScale(scale);
+    for (int i = 0; i < 3; ++i)
+    {
+        eras[i].setScale(scale);
+        selectableLevels[i].setScale(scale);
+        lockedLevels[i].setScale(scale);
     }
 }
 
@@ -307,6 +350,8 @@ void LevelSelectionMenu::update(float deltaTime)
 
     updateNodeColors();
     updateHover();
+    pulseTimer += deltaTime;
+    updateNodePulse();
 }
 
 // ---------------------------------
@@ -408,6 +453,14 @@ void LevelSelectionMenu::draw()
             eraPositions[i],
             lockedPositions[i]
         );
+    }
+
+    drawNodeGlow(*window, root);
+    for (int i = 0; i < 3; i++)
+    {
+        drawNodeGlow(*window, eras[i]);
+        drawNodeGlow(*window, selectableLevels[i]);
+        drawNodeGlow(*window, lockedLevels[i]);
     }
 
     window->draw(root);

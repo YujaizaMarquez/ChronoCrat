@@ -11,6 +11,7 @@ private:
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
     float animationTimer = 0.f;
+    float pulseTimer = 0.f;
     int currentFrame = 0;
 
     // Raíz: jefe final.
@@ -30,6 +31,7 @@ private:
     int hoveredLevel = -1;
 
     void updateBackgroundScale();
+    void updateNodePulse();
     void initializeTree();
     void updateHover();
     void updateNodeColors();
